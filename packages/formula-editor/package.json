@@ -1,0 +1,21 @@
+{
+  "name": "@fw-components/formula-editor",
+  "version": "0.0.0-alpha.1",
+  "type": "module",
+  "description": "A WYSIWYG type formula editor",
+  "main": "dist/src/formula-editor.js",
+  "scripts": {
+    "start": "es-dev-server --app-index index.html --node-resolve --watch --open",
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "dependencies": {
+    "@fw-components/styles": "*",
+    "lit": "^2.1.2",
+    "typescript": "^5.0.4"
+  },
+  "author": "The Fundwave Authors",
+  "license": "ISC",
+  "devDependencies": {
+    "es-dev-server": "^2.1.0"
+  }
+}
