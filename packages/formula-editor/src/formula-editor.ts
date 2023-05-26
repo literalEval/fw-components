@@ -1,6 +1,8 @@
 import { html, css, LitElement, PropertyValueMap } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import { Cursor } from "./cursor.js";
+import { Recommender } from "./recommendor.js";
+import "./suggestion-menu.js";
 
 enum Expectation {
   VARIABLE,
@@ -10,27 +12,33 @@ enum Expectation {
 
 @customElement("formula-editor")
 export class FormulaEditor extends LitElement {
+  private _recommender: Recommender;
+
+  constructor() {
+    super();
+
+    this._recommender = new Recommender(this.variables);
+  }
+
   @property()
   content: string = "";
 
   @property()
   formattedContent: Element | null = null;
 
-  variables: { [string: string]: boolean } = {
-    qib: true,
-    rii: true,
-    amog: true,
-    sussy: true,
-  };
+  @property()
+  recommendations: string[] | null = null;
 
-  mathematicalExpressions: { [string: string]: boolean } = {
-    "+": true,
-    "-": true,
-    "*": true,
-    "/": true,
-    "(": true,
-    ")": true,
-  };
+  variables = new Set([
+    "qib",
+    "rii",
+    "amog",
+    "mohit",
+    "mohini",
+    "ravi",
+    "ravi pandey",
+  ]);
+  mathematicalExpressions = new Set(["+", "-", "*", "/", "(", ")"]);
 
   styles = `
     #wysiwyg-editor {
@@ -55,6 +63,12 @@ export class FormulaEditor extends LitElement {
   }
 
   parseInput() {
+    // TODO: Research if cursor-detection can work with shadow-root somehow
+    //     let editor = this.shadowRoot.getElementById("wysiwyg-editor");
+    let editor = document.getElementById("wysiwyg-editor");
+    if (!editor) return;
+
+    let prevCurPos = Cursor.getCurrentCursorPosition(editor);
     let hasSpace = this.content != "" ? this.content.slice(0) == " " : false;
     //     let words = this.content.split(/[\s,]+/);
     let words = this.content.split(" ");
@@ -64,10 +78,24 @@ export class FormulaEditor extends LitElement {
     // formattedString += '<span id="wysiwygInternalHtml">';
 
     let expectation = Expectation.VARIABLE;
+    let currentPosition = 0;
 
     words.forEach((word, index, arr) => {
-      let isVariable: boolean = this.variables[word];
-      let isOperator = this.mathematicalExpressions[word];
+      console.log(currentPosition);
+      console.log(prevCurPos);
+      console.log(word.length);
+      if (
+        currentPosition <= prevCurPos &&
+        currentPosition + word.length + 1 >= prevCurPos
+      ) {
+        this.recommendations = this._recommender.getRecommendation(word);
+        // console.log(this.recommendations);
+      } else {
+        this.recommendations = null;
+      }
+
+      let isVariable: boolean = this.variables.has(word);
+      let isOperator = this.mathematicalExpressions.has(word);
       let isNumber = Number.parseFloat(word);
 
       if (
@@ -91,21 +119,16 @@ export class FormulaEditor extends LitElement {
       } else {
         expectation = Expectation.UNDEF;
       }
+
+      currentPosition += word.length + 1;
     });
 
     // formattedString += "</span>";
     formattedString += hasSpace ? " " : "";
 
-    // TODO: Research if cursor-detection can work with shadow-root somehow
-    //     let editor = this.shadowRoot.getElementById("wysiwyg-editor");
-    let editor = document.getElementById("wysiwyg-editor");
-
-    if (!editor) return;
-
     const parser = new DOMParser();
     const doc = parser.parseFromString(formattedString, "text/html");
 
-    let prevCurPos = Cursor.getCurrentCursorPosition(editor);
     this.formattedContent = doc.querySelector("body");
 
     if (editor) {
@@ -142,6 +165,12 @@ export class FormulaEditor extends LitElement {
         spellcheck="false"
         @input=${this.handleChange}
       ></div>
+      ${console.log(this.recommendations)}
+      ${this.recommendations
+        ? html`<suggestion-menu
+            recommendations=${this.recommendations.join(",")}
+          ></suggestion-menu>`
+        : html``}
       <div class="editor-output">${this.formattedContent}</div>
     `;
   }
