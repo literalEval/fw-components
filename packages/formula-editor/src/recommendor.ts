@@ -1,12 +1,12 @@
 export class Recommender {
   private _trie: TrieNode;
 
-  constructor(variables: Set<string>) {
+  constructor(variables: Map<string, number>) {
     this._trie = new TrieNode();
     this._trie.insertAll();
 
     for (let variable of variables) {
-      this.insert(variable);
+      this.insert(variable[0]);
     }
   }
 
