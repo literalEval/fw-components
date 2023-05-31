@@ -1,9 +1,9 @@
 import { html, css, LitElement, PropertyValueMap } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
-import { Cursor } from "./cursor.js";
 import { Recommender } from "./recommendor.js";
 import { Parser } from "./parser.js";
 import "./suggestion-menu.js";
+import { Cursor } from "./cursor.js";
 
 enum Expectation {
   VARIABLE,
@@ -13,13 +13,11 @@ enum Expectation {
 
 @customElement("formula-editor")
 export class FormulaEditor extends LitElement {
-  private _recommender: Recommender;
   private _parser: Parser;
 
   constructor() {
     super();
 
-    this._recommender = new Recommender(this.variables);
     this._parser = new Parser(this.variables, this.mathematicalExpressions);
   }
 
@@ -87,106 +85,37 @@ export class FormulaEditor extends LitElement {
     this.currentCursorPosition = null;
   }
 
-  parseInput(recommendation: string | null = null) {
+  parseInput(addRecommendation: string | null = null) {
     // TODO: Research if cursor-detection can work with shadow-root somehow
-    //     let editor = this.shadowRoot.getElementById("wysiwyg-editor");
+
     let editor = document.getElementById("wysiwyg-editor");
     if (!editor) return;
 
-    let prevCurPos = recommendation
+    this.currentCursorPosition = addRecommendation
       ? this.currentCursorPosition
       : Cursor.getCurrentCursorPosition(editor);
 
-    this.currentCursorPosition = prevCurPos;
+    const parseOutput = this._parser.parseInput(
+      this.content,
+      this.currentCursorPosition,
+      addRecommendation
+    );
 
-    let hasSpace = this.content != "" ? this.content.slice(0) == " " : false;
-    //     let words = this.content.split(/[\s,]+/);
-    let words = this.content.split(/([-+(),*/:?\s])/g);
-    let formattedString = ``;
+    this.recommendations = parseOutput.recommendations;
+    this.formattedContent = parseOutput.formattedContent;
+    editor.innerHTML = parseOutput.formattedString!;
 
-    // Trying to build a custom "shadow-like"
-    // formattedString += '<span id="wysiwygInternalHtml">';
-
-    let expectation = Expectation.VARIABLE;
-    let currentPosition = 0;
-
-    words.forEach((word, index, arr) => {
-      console.log(currentPosition);
-      console.log(prevCurPos);
-      console.log(word.length);
-      if (
-        currentPosition <= prevCurPos! &&
-        currentPosition + word.length + 1 >= prevCurPos!
-      ) {
-        if (recommendation) {
-          prevCurPos! += recommendation.length - word.length;
-          word = recommendation;
-        }
-
-        this.recommendations = this._recommender.getRecommendation(word);
-        // console.log("word has become ", word);
-        // console.log(this.recommendations);
-      } else {
-        this.recommendations = null;
-      }
-
-      let isVariable: boolean = this.variables.has(word);
-      let isOperator = this.mathematicalExpressions.has(word);
-      let isNumber = Number.parseFloat(word);
-
-      if (
-        (expectation == Expectation.VARIABLE && !isVariable) ||
-        (expectation == Expectation.OPERATOR && !isOperator) ||
-        (expectation == Expectation.VARIABLE && isOperator)
-      ) {
-        formattedString = `${formattedString}<u class="wysiwygInternals">${word}</u>`;
-      } else if (isOperator) {
-        formattedString = `${formattedString}<b class="wysiwygInternals">${word}</b>`;
-        expectation = Expectation.VARIABLE;
-      } else if (word == " ") {
-        formattedString = `${formattedString} `;
-      } else {
-        formattedString = `${formattedString}${word}${
-          recommendation ? "&nbsp;" : ""
-        }`;
-        expectation = Expectation.OPERATOR;
-      }
-
-      if (isVariable || isNumber) {
-        expectation = Expectation.OPERATOR;
-      } else if (isOperator) {
-        expectation = Expectation.VARIABLE;
-      } else {
-        expectation = Expectation.UNDEF;
-      }
-
-      currentPosition += word.length + 1;
-    });
-
-    // formattedString += "</span>";
-    formattedString += hasSpace ? " " : "";
-
-    const parser = new DOMParser();
-    const doc = parser.parseFromString(formattedString, "text/html");
-
-    this.formattedContent = doc.querySelector("body");
-
-    if (editor) {
-      editor.innerHTML = formattedString;
-    }
-
-    Cursor.setCurrentCursorPosition(prevCurPos!, editor);
-    editor?.focus();
-
-    if (recommendation) {
+    if (addRecommendation) {
       this.content = (editor as HTMLDivElement).innerText;
       this.recommendations = null;
+      this.currentCursorPosition = parseOutput.newCursorPosition;
     }
 
-    this.calculatedResult = this._parser.calculate(this.content);
+    Cursor.setCurrentCursorPosition(this.currentCursorPosition!, editor);
+    editor?.focus();
 
+    this.calculatedResult = this._parser.calculate(this.content);
     this.requestUpdate();
-    return formattedString;
   }
 
   requestCalculate() {
@@ -231,6 +160,3 @@ export class FormulaEditor extends LitElement {
     `;
   }
 }
-
-// <!-- <span>${this.calculatedOutput}</span> -->
-// <!-- <div class="editor-output">${this.errorStr}</div> -->

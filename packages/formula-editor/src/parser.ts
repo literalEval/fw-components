@@ -1,60 +1,14 @@
 import Big from "big.js";
+import { Cursor } from "./cursor.js";
+import { Expectation, Queue, Stack } from "./helpers.js";
+import { Recommender } from "./recommendor.js";
 
-class Stack<Type> {
-  private _inner: Type[] = [];
-
-  push(item: Type): void {
-    this._inner.push(item);
-  }
-
-  pop(): Type | undefined {
-    return this._inner.pop();
-  }
-
-  top(): Type | undefined {
-    return this._inner.at(-1);
-  }
-
-  empty(): boolean {
-    return this._inner.length == 0;
-  }
-
-  print(): void {
-    console.log(this._inner);
-  }
-}
-
-class Queue<Type> {
-  private _inner: { [key: number]: Type } = {};
-  private _head: number = 0;
-  private _tail: number = 0;
-
-  enqueue(item: Type): void {
-    this._inner[this._tail] = item;
-    this._tail++;
-  }
-
-  dequeue(): Type | undefined {
-    if (this._tail === this._head) return undefined;
-
-    const element = this._inner[this._head];
-    delete this._inner[this._head];
-    this._head++;
-
-    return element;
-  }
-
-  peek(): Type {
-    return this._inner[this._head];
-  }
-
-  empty(): boolean {
-    return this._head == this._tail;
-  }
-
-  print(): void {
-    console.log(this._inner);
-  }
+export interface ParseOutput {
+  recommendations: string[] | null;
+  formattedContent: HTMLBodyElement | null;
+  formattedString: string | null;
+  newCursorPosition: number; 
+  error: string | null;
 }
 
 export class Parser {
@@ -64,7 +18,10 @@ export class Parser {
   ) {
     this.variables = variables;
     this.mathematicalExpressions = mathematicalExpressions;
+    this._recommender = new Recommender(this.variables);
   }
+
+  private _recommender: Recommender;
 
   variables: Map<string, number>;
   mathematicalExpressions: Set<string>;
@@ -77,16 +34,82 @@ export class Parser {
   };
   mappedFormula: string = "";
 
-  parseInput(formula: string): string | null {
-    let tokens = formula.split(/([-+(),*/:? ])/g);
+  parseInput(
+    formula: string,
+    prevCurPos: number | null = null,
+    recommendation: string | null = null
+  ): ParseOutput {
+    let tokens = formula.split(/([-+(),*/:?\s])/g);
+    let formattedString = ``;
+    let expectation = Expectation.VARIABLE;
+    let currentPosition = 0;
+    let parseOutput: ParseOutput = {
+      recommendations: null,
+      formattedContent: null,
+      formattedString: null,
+      newCursorPosition: prevCurPos ?? -1,
+      error: null,
+    };
 
-    for (let token of tokens) {
-      let isVariable = this.variables.has(token);
+    tokens.forEach((token, index, arr) => {
+      console.log(currentPosition);
+      console.log(prevCurPos);
+      console.log(token.length);
+      if (
+        currentPosition <= prevCurPos! &&
+        currentPosition + token.length + 1 >= prevCurPos!
+      ) {
+        if (recommendation) {
+          parseOutput.newCursorPosition += recommendation.length - token.length;
+          token = recommendation;
+        }
+
+        parseOutput.recommendations =
+          this._recommender.getRecommendation(token);
+      } else {
+        parseOutput.recommendations = null;
+      }
+
+      let isVariable: boolean = this.variables.has(token);
       let isOperator = this.mathematicalExpressions.has(token);
       let isNumber = Number.parseFloat(token);
-    }
 
-    return null;
+      if (
+        (expectation == Expectation.VARIABLE && !isVariable) ||
+        (expectation == Expectation.OPERATOR && !isOperator) ||
+        (expectation == Expectation.VARIABLE && isOperator)
+      ) {
+        formattedString = `${formattedString}<u class="wysiwygInternals">${token}</u>`;
+      } else if (isOperator) {
+        formattedString = `${formattedString}<b class="wysiwygInternals">${token}</b>`;
+        expectation = Expectation.VARIABLE;
+      } else if (token == " ") {
+        formattedString = `${formattedString} `;
+      } else {
+        formattedString = `${formattedString}${token}${
+          recommendation ? "&nbsp;" : ""
+        }`;
+        expectation = Expectation.OPERATOR;
+      }
+
+      if (isVariable || isNumber) {
+        expectation = Expectation.OPERATOR;
+      } else if (isOperator) {
+        expectation = Expectation.VARIABLE;
+      } else {
+        expectation = Expectation.UNDEF;
+      }
+
+      currentPosition += token.length;
+    });
+
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(formattedString, "text/html");
+
+    parseOutput.formattedContent = doc.querySelector("body")!;
+    parseOutput.formattedString = formattedString;
+
+    return parseOutput;
   }
 
   buildRPN(formula: string): Queue<string> | null {
