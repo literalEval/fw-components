@@ -7,7 +7,7 @@ export interface ParseOutput {
   recommendations: string[] | null;
   formattedContent: HTMLBodyElement | null;
   formattedString: string | null;
-  newCursorPosition: number; 
+  newCursorPosition: number;
   error: string | null;
 }
 
@@ -207,7 +207,7 @@ export class Parser {
         }
 
         if (
-          this.operatorPrecedence[opa] < this.operatorPrecedence[symbol] ||
+          this.operatorPrecedence[opa] > this.operatorPrecedence[symbol] ||
           (this.operatorPrecedence[opa] === this.operatorPrecedence[symbol] &&
             ["/", "-"].includes(symbol))
         ) {

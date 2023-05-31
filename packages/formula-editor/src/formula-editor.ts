@@ -39,6 +39,7 @@ export class FormulaEditor extends LitElement {
   // If this parseInput is called to add a recommendation, say by clicking,
   // browser removes focus from the input box. In that case, we have no way
   // of knowing where the cursor previously was, other than storing it somewhere.
+  
   currentCursorPosition: number | null = null;
 
   variables = new Map([
