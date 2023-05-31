@@ -74,17 +74,18 @@ export class Parser {
       let isOperator = this.mathematicalExpressions.has(token);
       let isNumber = Number.parseFloat(token);
 
-      if (
+      if (token == " ") {
+        formattedString = `${formattedString} `;
+      } else if (
         (expectation == Expectation.VARIABLE && !isVariable) ||
         (expectation == Expectation.OPERATOR && !isOperator) ||
-        (expectation == Expectation.VARIABLE && isOperator)
+        (expectation == Expectation.VARIABLE && isOperator) ||
+        (!isNumber && !isVariable && !isOperator)
       ) {
         formattedString = `${formattedString}<u class="wysiwygInternals">${token}</u>`;
       } else if (isOperator) {
         formattedString = `${formattedString}<b class="wysiwygInternals">${token}</b>`;
         expectation = Expectation.VARIABLE;
-      } else if (token == " ") {
-        formattedString = `${formattedString} `;
       } else {
         formattedString = `${formattedString}${token}${
           recommendation ? "&nbsp;" : ""
@@ -113,13 +114,12 @@ export class Parser {
   }
 
   buildRPN(formula: string): Queue<string> | null {
-    if (this.parseInput(formula)) {
-      // return null;
+    if (this.parseInput(formula).error) {
+      return null;
     }
 
-    // let tokens = formula.split(/[\s,\(\)\+\-\*\/]+/);
     let tokens = formula
-      .split(/([-+(),*/:? ])/g)
+      .split(/([-+(),*/:?\s])/g)
       .filter((el: string) => !/\s+/.test(el) && el !== "");
 
     // Implementing the Shunting Yard Algorithm (EW Dijkstra)
@@ -222,17 +222,16 @@ export class Parser {
       } else throw `${symbol} is not a recognized symbol`;
     });
 
-    // return resultStack.pop()!;
     if (!resultStack.empty()) {
       return resultStack.pop()!;
     } else throw `${stringRPN} is not a correct RPN`;
   }
 
-  calculate(formula: string): number | null {
+  calculate(formula: string): number | undefined {
     let rpn = this.buildRPN(formula);
 
     if (!rpn) {
-      return null;
+      return undefined;
     }
 
     let calcStack = new Stack<Big>();
@@ -265,6 +264,6 @@ export class Parser {
     }
 
     console.log("amogus is: ", Function(`return ${calcStack.top()};`)());
-    return Function(`return ${calcStack.top()?.toNumber()};`)();
+    return calcStack.top()?.toNumber();
   }
 }

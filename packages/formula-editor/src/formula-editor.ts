@@ -1,9 +1,8 @@
 import { html, css, LitElement, PropertyValueMap } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
-import { Recommender } from "./recommendor.js";
 import { Parser } from "./parser.js";
-import "./suggestion-menu.js";
 import { Cursor } from "./cursor.js";
+import "./suggestion-menu.js";
 
 enum Expectation {
   VARIABLE,
@@ -39,7 +38,7 @@ export class FormulaEditor extends LitElement {
   // If this parseInput is called to add a recommendation, say by clicking,
   // browser removes focus from the input box. In that case, we have no way
   // of knowing where the cursor previously was, other than storing it somewhere.
-  
+
   currentCursorPosition: number | null = null;
 
   variables = new Map([
@@ -66,7 +65,6 @@ export class FormulaEditor extends LitElement {
 
     u.wysiwygInternals {
       text-decoration-color: red;
-      text-decoration-style: wavy;
     }
   `;
 
@@ -104,6 +102,7 @@ export class FormulaEditor extends LitElement {
 
     this.recommendations = parseOutput.recommendations;
     this.formattedContent = parseOutput.formattedContent;
+    this.errorStr = parseOutput.error;
     editor.innerHTML = parseOutput.formattedString!;
 
     if (addRecommendation) {
@@ -115,12 +114,12 @@ export class FormulaEditor extends LitElement {
     Cursor.setCurrentCursorPosition(this.currentCursorPosition!, editor);
     editor?.focus();
 
-    this.calculatedResult = this._parser.calculate(this.content);
+    this.calculatedResult = this._parser.calculate(this.content)!;
     this.requestUpdate();
   }
 
   requestCalculate() {
-    this.calculatedResult = this._parser.calculate(this.content);
+    this.calculatedResult = this._parser.calculate(this.content)!;
     this.content = this._parser.addParens(this.content) ?? this.content;
     this.parseInput();
     this.requestUpdate();
@@ -157,6 +156,7 @@ export class FormulaEditor extends LitElement {
           ></suggestion-menu>`
         : html``}
       <button @click=${this.requestCalculate}>Calculate</button>
+      <p style="color: red;">${this.errorStr}</p>
       <p>${this.calculatedResult}</p>
     `;
   }
