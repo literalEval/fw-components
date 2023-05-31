@@ -69,6 +69,7 @@ export class Parser {
   variables: Map<string, number>;
   mathematicalExpressions: Set<string>;
   operatorPrecedence: { [key: string]: number } = {
+    "^": 3,
     "/": 2,
     "*": 2,
     "+": 1,
@@ -77,7 +78,7 @@ export class Parser {
   mappedFormula: string = "";
 
   parseInput(formula: string): string | null {
-    let tokens = formula.split(" ");
+    let tokens = formula.split(/([-+(),*/:? ])/g);
 
     for (let token of tokens) {
       let isVariable = this.variables.has(token);
@@ -93,7 +94,10 @@ export class Parser {
       // return null;
     }
 
-    let tokens = formula.split(/[\s,]+/);
+    // let tokens = formula.split(/[\s,\(\)\+\-\*\/]+/);
+    let tokens = formula
+      .split(/([-+(),*/:? ])/g)
+      .filter((el: string) => !/\s+/.test(el) && el !== "");
 
     // Implementing the Shunting Yard Algorithm (EW Dijkstra)
 
@@ -101,38 +105,36 @@ export class Parser {
     const outputQueue = new Queue<string>();
 
     for (let token of tokens) {
-      let mappedToken = this.variables.get(token)?.toString() ?? token;
-
-      if (mappedToken == "(") {
+      if (token == "(") {
         operatorStack.push("(");
-      } else if (mappedToken == ")") {
+      } else if (token == ")") {
         while (operatorStack.top() != "(") {
           outputQueue.enqueue(operatorStack.pop()!);
         }
 
         operatorStack.pop();
-      } else if (this.mathematicalExpressions.has(mappedToken)) {
+      } else if (this.mathematicalExpressions.has(token)) {
         while (
           this.mathematicalExpressions.has(operatorStack.top()!) &&
-          this.operatorPrecedence[mappedToken] <=
+          this.operatorPrecedence[token] <=
             this.operatorPrecedence[operatorStack.top()!]
         ) {
           outputQueue.enqueue(operatorStack.pop()!);
         }
 
-        operatorStack.push(mappedToken);
-      } else if (!Number.isNaN(mappedToken) && mappedToken != "") {
-        outputQueue.enqueue(mappedToken);
+        operatorStack.push(token);
+      } else if (!Number.isNaN(token) && token != "") {
+        outputQueue.enqueue(token);
       }
-
-      (() => {
-        outputQueue?.print();
-      })();
     }
 
     while (operatorStack.top()) {
       outputQueue.enqueue(operatorStack.pop()!);
     }
+
+    (() => {
+      outputQueue?.print();
+    })();
 
     return outputQueue;
   }
@@ -151,7 +153,7 @@ export class Parser {
     }
 
     let lexedRPN = stringRPN
-      .replace(/\^/g, "**")
+      // .replace(/\^/g, "**")
       .split(/\s+/g)
       .filter((el: string) => !/\s+/.test(el) && el !== "");
 
@@ -161,7 +163,10 @@ export class Parser {
     lexedRPN.forEach((symbol) => {
       let stra, strb;
 
-      if (!isNaN(parseFloat(symbol)) && isFinite(parseFloat(symbol))) {
+      if (
+        this.variables.has(symbol) ||
+        (!isNaN(parseFloat(symbol)) && isFinite(parseFloat(symbol)))
+      ) {
         resultStack.push(symbol);
         operatorStack.push(null);
       } else if (Object.keys(this.operatorPrecedence).includes(symbol)) {
@@ -171,11 +176,13 @@ export class Parser {
           operatorStack.pop()!,
           operatorStack.pop()!,
         ];
+
         if (this.operatorPrecedence[opb] <= this.operatorPrecedence[symbol]) {
           strb = `(${b})`;
         } else {
           strb = `${b}`;
         }
+
         if (
           this.operatorPrecedence[opa] < this.operatorPrecedence[symbol] ||
           (this.operatorPrecedence[opa] === this.operatorPrecedence[symbol] &&
@@ -192,7 +199,7 @@ export class Parser {
       } else throw `${symbol} is not a recognized symbol`;
     });
 
-    return resultStack.pop()!;
+    // return resultStack.pop()!;
     if (!resultStack.empty()) {
       return resultStack.pop()!;
     } else throw `${stringRPN} is not a correct RPN`;
@@ -208,12 +215,15 @@ export class Parser {
     let calcStack = new Stack<Big>();
 
     while (!rpn.empty()) {
-      if (!this.mathematicalExpressions.has(rpn.peek()!)) {
-        calcStack.push(Big(Number.parseFloat(rpn.dequeue()!)));
+      const frontItem = rpn.dequeue()!;
+
+      if (!this.mathematicalExpressions.has(frontItem)) {
+        let val = this.variables.get(frontItem)?.toString() ?? frontItem;
+        calcStack.push(Big(Number.parseFloat(val)));
       } else {
-        let operator = rpn.dequeue();
-        let numA = calcStack.pop()!;
+        let operator = frontItem;
         let numB = calcStack.pop()!;
+        let numA = calcStack.pop()!;
 
         switch (operator) {
           case "+":

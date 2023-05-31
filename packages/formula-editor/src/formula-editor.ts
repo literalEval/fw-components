@@ -50,7 +50,7 @@ export class FormulaEditor extends LitElement {
     ["mohit", 0.1],
     ["mohini", 0.2],
     ["ravi", 7],
-    ["ravi pandey", 8],
+    ["ravipandey", 8],
   ]);
   mathematicalExpressions = new Set(["+", "-", "*", "/", "(", ")"]);
 
@@ -101,7 +101,7 @@ export class FormulaEditor extends LitElement {
 
     let hasSpace = this.content != "" ? this.content.slice(0) == " " : false;
     //     let words = this.content.split(/[\s,]+/);
-    let words = this.content.split(" ");
+    let words = this.content.split(/([-+(),*/:?\s])/g);
     let formattedString = ``;
 
     // Trying to build a custom "shadow-like"
@@ -139,12 +139,14 @@ export class FormulaEditor extends LitElement {
         (expectation == Expectation.OPERATOR && !isOperator) ||
         (expectation == Expectation.VARIABLE && isOperator)
       ) {
-        formattedString = `${formattedString} <u class="wysiwygInternals">${word}</u>`;
+        formattedString = `${formattedString}<u class="wysiwygInternals">${word}</u>`;
       } else if (isOperator) {
-        formattedString = `${formattedString} <b class="wysiwygInternals">${word}</b>`;
+        formattedString = `${formattedString}<b class="wysiwygInternals">${word}</b>`;
         expectation = Expectation.VARIABLE;
+      } else if (word == " ") {
+        formattedString = `${formattedString} `;
       } else {
-        formattedString = `${formattedString} ${word}${
+        formattedString = `${formattedString}${word}${
           recommendation ? "&nbsp;" : ""
         }`;
         expectation = Expectation.OPERATOR;
