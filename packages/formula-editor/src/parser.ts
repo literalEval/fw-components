@@ -76,6 +76,8 @@ export class Parser {
 
       if (token == " ") {
         formattedString = `${formattedString} `;
+      } else if (token == "(" || token == ")") {
+        formattedString = `${formattedString}<span class="wysiwygInternals bracket">${token}</span>`;
       } else if (
         (expectation == Expectation.VARIABLE && !isVariable) ||
         (expectation == Expectation.OPERATOR && !isOperator) ||
@@ -84,7 +86,7 @@ export class Parser {
       ) {
         formattedString = `${formattedString}<u class="wysiwygInternals">${token}</u>`;
       } else if (isOperator) {
-        formattedString = `${formattedString}<b class="wysiwygInternals">${token}</b>`;
+        formattedString = `${formattedString}<b class="wysiwygInternals operator">${token}</b>`;
         expectation = Expectation.VARIABLE;
       } else {
         formattedString = `${formattedString}${token}${
@@ -217,7 +219,7 @@ export class Parser {
           stra = `${a}`;
         }
 
-        resultStack.push(`${strb} ${symbol} ${stra}`);
+        resultStack.push(`${strb}${symbol}${stra}`);
         operatorStack.push(symbol);
       } else throw `${symbol} is not a recognized symbol`;
     });

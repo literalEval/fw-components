@@ -66,6 +66,14 @@ export class FormulaEditor extends LitElement {
     u.wysiwygInternals {
       text-decoration-color: red;
     }
+
+    span.wysiwygInternals.bracket {
+      color: #AA3731;
+    }
+
+    b.wysiwygInternals.operator {
+      color: #777777;
+    }
   `;
 
   handleChange(event: InputEvent) {
