@@ -7,7 +7,7 @@ export interface ParseOutput {
   formattedContent: HTMLBodyElement | null;
   formattedString: string | null;
   newCursorPosition: number;
-  error: string | null;
+  errorStr: string | null;
 }
 
 export class Parser {
@@ -47,10 +47,23 @@ export class Parser {
       formattedContent: null,
       formattedString: null,
       newCursorPosition: prevCurPos ?? -1,
-      error: null,
+      errorStr: null,
     };
 
-    tokens.forEach((token, index, arr) => {
+    console.log(tokens);
+
+    tokens.forEach((token) => {
+      let isNumber =
+        this.variables.has(token) || !Number.isNaN(Number.parseFloat(token));
+      let isOperator = this.mathematicalExpressions.has(token);
+      let isSpace = token.trim() == "";
+      let bracketCount = 0;
+
+      if (isSpace) {
+        formattedString = `${formattedString}${token}`;
+        return;
+      }
+
       if (
         currentPosition <= prevCurPos! &&
         currentPosition + token.length + 1 >= prevCurPos! &&
@@ -71,38 +84,61 @@ export class Parser {
         // parseOutput.recommendations = null;
       }
 
-      let isVariable: boolean = this.variables.has(token);
-      let isOperator = this.mathematicalExpressions.has(token);
-      let isNumber = Number.parseFloat(token);
+      let tokenClassName = "";
 
-      if (token == " ") {
-        formattedString = `${formattedString} `;
-      } else if (token == "(" || token == ")") {
-        formattedString = `${formattedString}<span class="wysiwygInternals bracket">${token}</span>`;
-      } else if (
-        (expectation == Expectation.VARIABLE && !isVariable) ||
+      if (token == "(") {
+        bracketCount++;
+        tokenClassName += " bracket";
+      } else if (token == ")") {
+        bracketCount--;
+        tokenClassName += " bracket";
+      } else if (isOperator) {
+        tokenClassName += " operator";
+      } else {
+      }
+
+      if (
+        expectation == Expectation.UNDEF ||
+        (expectation == Expectation.VARIABLE && !isNumber) ||
         (expectation == Expectation.OPERATOR && !isOperator) ||
-        (expectation == Expectation.VARIABLE && isOperator) ||
-        (!isNumber && !isVariable && !isOperator)
+        (!isNumber && !isOperator)
       ) {
-        formattedString = `${formattedString}<u class="wysiwygInternals">${token}</u>`;
-      } else if (isOperator) {
-        formattedString = `${formattedString}<b class="wysiwygInternals operator">${token}</b>`;
-        expectation = Expectation.VARIABLE;
-      } else {
-        formattedString = `${formattedString}${token}${
-          recommendation ? "&nbsp;" : ""
-        }`;
-        expectation = Expectation.OPERATOR;
+        tokenClassName += " error";
       }
 
-      if (isVariable || isNumber) {
-        expectation = Expectation.OPERATOR;
-      } else if (isOperator) {
-        expectation = Expectation.VARIABLE;
-      } else {
-        expectation = Expectation.UNDEF;
+      if (!parseOutput.errorStr) {
+        if (expectation == Expectation.VARIABLE && !isNumber) {
+          parseOutput.errorStr = `Expected variable/number at pos: ${currentPosition}`;
+          expectation = Expectation.UNDEF;
+        } else if (expectation == Expectation.OPERATOR && !isOperator) {
+          parseOutput.errorStr = `Expected mathematical operator at pos: ${currentPosition}`;
+          expectation = Expectation.UNDEF;
+        } else if (!isNumber && !isOperator) {
+          parseOutput.errorStr = `Unknown word at pos: ${currentPosition}`;
+          expectation = Expectation.UNDEF;
+        }
       }
+
+      if (expectation != Expectation.UNDEF) {
+        if (token == "(" || token == ")" || isOperator) {
+          expectation = Expectation.VARIABLE;
+        } else if (isNumber) {
+          expectation = Expectation.OPERATOR;
+        }
+      }
+
+      formattedString = `${formattedString}<span class="wysiwygInternals ${tokenClassName}">${token}</span>${
+        recommendation ? "&nbsp;" : ""
+      }`;
+
+      // if (isNumber) {
+      //   expectation = Expectation.OPERATOR;
+      // } else if (isOperator) {
+      //   expectation = Expectation.VARIABLE;
+      // } else if (isSpace) {
+      // } else {
+      //   expectation = Expectation.UNDEF;
+      // }
 
       currentPosition += token.length;
     });
@@ -117,7 +153,7 @@ export class Parser {
   }
 
   buildRPN(formula: string): Queue<string> | null {
-    if (this.parseInput(formula).error) {
+    if (this.parseInput(formula).errorStr) {
       return null;
     }
 

@@ -57,15 +57,17 @@ export class FormulaEditor extends LitElement {
       border: none;
     }
 
-    u.wysiwygInternals {
+    .wysiwygInternals.error {
+      text-decoration: underline;
       text-decoration-color: red;
     }
 
-    span.wysiwygInternals.bracket {
+    .wysiwygInternals.bracket {
       color: #AA3731;
     }
 
-    b.wysiwygInternals.operator {
+    .wysiwygInternals.operator {
+      font-weight: bold;
       color: #777777;
     }
   `;
@@ -106,7 +108,7 @@ export class FormulaEditor extends LitElement {
     this.recommendations = parseOutput.recommendations;
     // console.log(this.recommendations);
     this.formattedContent = parseOutput.formattedContent;
-    this.errorStr = parseOutput.error;
+    this.errorStr = parseOutput.errorStr;
     editor.innerHTML = parseOutput.formattedString!;
     this.content = (editor as HTMLDivElement).innerText;
 
