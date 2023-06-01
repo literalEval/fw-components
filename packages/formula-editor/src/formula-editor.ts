@@ -4,12 +4,6 @@ import { Parser } from "./parser.js";
 import { Cursor } from "./cursor.js";
 import "./suggestion-menu.js";
 
-enum Expectation {
-  VARIABLE,
-  OPERATOR,
-  UNDEF,
-}
-
 @customElement("formula-editor")
 export class FormulaEditor extends LitElement {
   private _parser: Parser;
@@ -20,13 +14,13 @@ export class FormulaEditor extends LitElement {
     this._parser = new Parser(this.variables, this.mathematicalExpressions);
   }
 
-  @property()
+  @state()
   content: string = "";
 
-  @property()
+  @state()
   formattedContent: Element | null = null;
 
-  @property()
+  @state()
   recommendations: string[] | null = null;
 
   @state()
@@ -42,9 +36,9 @@ export class FormulaEditor extends LitElement {
   currentCursorPosition: number | null = null;
 
   variables = new Map([
-    ["qib", 2],
-    ["rii", 3],
-    ["amog", 4],
+    ["a", 2],
+    ["b", 3],
+    ["c", 4],
     ["mohit", 0.1],
     ["mohini", 0.2],
     ["ravi", 7],
@@ -152,7 +146,7 @@ export class FormulaEditor extends LitElement {
       <div
         contenteditable
         id="wysiwyg-editor"
-        style="min-width: 200px; height: 30px; border: 2px solid black;"
+        style="min-width: 200px; height: 30px; border: 0px solid black; outline: 1px solid black;"
         spellcheck="false"
         @input=${this.handleChange}
       ></div>

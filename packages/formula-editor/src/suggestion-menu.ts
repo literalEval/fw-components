@@ -1,5 +1,5 @@
-import { html, LitElement } from "lit";
-import { customElement, property, state } from "lit/decorators.js";
+import { css, html, LitElement } from "lit";
+import { customElement, property } from "lit/decorators.js";
 
 @customElement("suggestion-menu")
 export class SuggestionMenu extends LitElement {
@@ -11,10 +11,27 @@ export class SuggestionMenu extends LitElement {
     // console.log(e);
   };
 
-  // Disable shadow-root as it messes up cursor detection.
-  createRenderRoot() {
-    return this;
-  }
+  static styles = css`
+    ul {
+      border: 1px solid grey;
+      box-sizing: border-box;
+      width: fit-content;
+      list-style-type: none;
+      padding: 4px 0px;
+      margin: 2px;
+    }
+
+    li {
+      /* width: fit-content; */
+      /* box-size: fit-content; */
+      margin: 0px;
+      padding: 2px 6px;
+    }
+
+    li:focus-visible {
+      outline: 1px solid red;
+    }
+  `;
 
   handleKeydown(event: KeyboardEvent, recommendation: string) {
     if (event.code == "Enter") {
@@ -26,19 +43,17 @@ export class SuggestionMenu extends LitElement {
 
   render() {
     return html`
-      <div style="min-width: 50px; border: 2px solid red;">
-        <ul>
-          ${this.recommendations.split(",").map((recommendation) => {
-            return html`<li
-              tabindex="0"
-              @click=${(e: any) => this.onClickRecommendation(recommendation)}
-              @keydown=${(e: any) => this.handleKeydown(e, recommendation)}
-            >
-              ${recommendation}
-            </li>`;
-          })}
-        </ul>
-      </div>
+      <ul class="wysiwyg-suggestion-menu">
+        ${this.recommendations.split(",").map((recommendation) => {
+          return html`<li
+            tabindex="0"
+            @click=${(e: any) => this.onClickRecommendation(recommendation)}
+            @keydown=${(e: any) => this.handleKeydown(e, recommendation)}
+          >
+            ${recommendation}
+          </li>`;
+        })}
+      </ul>
     `;
   }
 }

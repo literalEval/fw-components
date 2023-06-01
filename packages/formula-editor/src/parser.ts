@@ -1,5 +1,4 @@
 import Big from "big.js";
-import { Cursor } from "./cursor.js";
 import { Expectation, Queue, Stack } from "./helpers.js";
 import { Recommender } from "./recommendor.js";
 
@@ -60,7 +59,8 @@ export class Parser {
         currentPosition + token.length + 1 >= prevCurPos!
       ) {
         if (recommendation) {
-          parseOutput.newCursorPosition += recommendation.length - token.length;
+          parseOutput.newCursorPosition +=
+            recommendation.length - token.length + 1;
           token = recommendation;
         }
 
@@ -219,7 +219,7 @@ export class Parser {
           stra = `${a}`;
         }
 
-        resultStack.push(`${strb}${symbol}${stra}`);
+        resultStack.push(`${strb} ${symbol} ${stra}`);
         operatorStack.push(symbol);
       } else throw `${symbol} is not a recognized symbol`;
     });
