@@ -39,12 +39,12 @@ export class FormulaEditor extends LitElement {
     ["a", 2],
     ["b", 3],
     ["c", 4],
-    ["mohit", 0.1],
+    ["mohit", 0],
     ["mohini", 0.2],
     ["ravi", 7],
     ["ravipandey", 8],
   ]);
-  mathematicalExpressions = new Set(["+", "-", "*", "/", "(", ")"]);
+  mathematicalExpressions = new Set(["+", "-", "*", "/"]);
 
   styles = `
     #wysiwyg-editor {

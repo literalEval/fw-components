@@ -41,6 +41,7 @@ export class Parser {
     let tokens = formula.split(/([-+(),*/:?\s])/g);
     let formattedString = ``;
     let expectation = Expectation.VARIABLE;
+    let bracketCount = 0;
     let currentPosition = 0;
     let parseOutput: ParseOutput = {
       recommendations: null,
@@ -57,10 +58,11 @@ export class Parser {
         this.variables.has(token) || !Number.isNaN(Number.parseFloat(token));
       let isOperator = this.mathematicalExpressions.has(token);
       let isSpace = token.trim() == "";
-      let bracketCount = 0;
+      let isBracket = token == "(" || token == ")";
 
       if (isSpace) {
         formattedString = `${formattedString}${token}`;
+        currentPosition += token.length;
         return;
       }
 
@@ -99,7 +101,7 @@ export class Parser {
 
       if (
         expectation == Expectation.UNDEF ||
-        (expectation == Expectation.VARIABLE && !isNumber) ||
+        (expectation == Expectation.VARIABLE && !isNumber && !isBracket) ||
         (expectation == Expectation.OPERATOR && !isOperator) ||
         (!isNumber && !isOperator)
       ) {
@@ -107,28 +109,40 @@ export class Parser {
       }
 
       if (!parseOutput.errorStr) {
-        if (expectation == Expectation.VARIABLE && !isNumber) {
+        if (bracketCount < 0) {
+          parseOutput.errorStr = `Unexpected ')' at pos: ${currentPosition}`;
+          expectation = Expectation.UNDEF;
+        } else if (
+          expectation == Expectation.VARIABLE &&
+          !isNumber &&
+          !isBracket
+        ) {
           parseOutput.errorStr = `Expected variable/number at pos: ${currentPosition}`;
           expectation = Expectation.UNDEF;
-        } else if (expectation == Expectation.OPERATOR && !isOperator) {
+        } else if (
+          expectation == Expectation.OPERATOR &&
+          !isOperator &&
+          token != ")"
+        ) {
           parseOutput.errorStr = `Expected mathematical operator at pos: ${currentPosition}`;
           expectation = Expectation.UNDEF;
-        } else if (!isNumber && !isOperator) {
+        } else if (!isNumber && !isOperator && !isBracket) {
           parseOutput.errorStr = `Unknown word at pos: ${currentPosition}`;
           expectation = Expectation.UNDEF;
         }
       }
 
       if (expectation != Expectation.UNDEF) {
-        if (token == "(" || token == ")" || isOperator) {
+        if (token == "(" || isOperator) {
+          console.log("operator encountered ", token, expectation);
           expectation = Expectation.VARIABLE;
-        } else if (isNumber) {
+        } else if (token == ")" || isNumber) {
           expectation = Expectation.OPERATOR;
         }
       }
 
       formattedString = `${formattedString}<span class="wysiwygInternals ${tokenClassName}">${token}</span>${
-        recommendation ? "&nbsp;" : ""
+        recommendation ? " " : ""
       }`;
 
       // if (isNumber) {
@@ -141,6 +155,7 @@ export class Parser {
       // }
 
       currentPosition += token.length;
+      console.log(token, expectation);
     });
 
     const parser = new DOMParser();
@@ -240,7 +255,7 @@ export class Parser {
         ];
 
         if (
-          this.operatorPrecedence[opb] < this.operatorPrecedence[symbol] ||
+          this.operatorPrecedence[opb] <= this.operatorPrecedence[symbol] ||
           (this.operatorPrecedence[opb] === this.operatorPrecedence[symbol] &&
             ["/", "-"].includes(symbol))
         ) {
@@ -250,7 +265,7 @@ export class Parser {
         }
 
         if (
-          this.operatorPrecedence[opa] > this.operatorPrecedence[symbol] ||
+          this.operatorPrecedence[opa] <= this.operatorPrecedence[symbol] ||
           (this.operatorPrecedence[opa] === this.operatorPrecedence[symbol] &&
             ["/", "-"].includes(symbol))
         ) {
