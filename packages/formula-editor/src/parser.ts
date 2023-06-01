@@ -51,13 +51,13 @@ export class Parser {
     };
 
     tokens.forEach((token, index, arr) => {
-      console.log(currentPosition);
-      console.log(prevCurPos);
-      console.log(token.length);
       if (
         currentPosition <= prevCurPos! &&
-        currentPosition + token.length + 1 >= prevCurPos!
+        currentPosition + token.length + 1 >= prevCurPos! &&
+        !parseOutput.recommendations
       ) {
+        // If a recommendation was provided, replace the correspoding
+        // word with it and move the cursor forward, accordingly.
         if (recommendation) {
           parseOutput.newCursorPosition +=
             recommendation.length - token.length + 1;
@@ -66,8 +66,9 @@ export class Parser {
 
         parseOutput.recommendations =
           this._recommender.getRecommendation(token);
+        console.log(parseOutput.recommendations);
       } else {
-        parseOutput.recommendations = null;
+        // parseOutput.recommendations = null;
       }
 
       let isVariable: boolean = this.variables.has(token);
@@ -158,7 +159,7 @@ export class Parser {
     }
 
     (() => {
-      outputQueue?.print();
+      // outputQueue?.print();
     })();
 
     return outputQueue;
@@ -217,7 +218,6 @@ export class Parser {
           (this.operatorPrecedence[opa] === this.operatorPrecedence[symbol] &&
             ["/", "-"].includes(symbol))
         ) {
-          console.log("the symbol is", symbol);
           stra = `(${a})`;
         } else {
           stra = `${a}`;
@@ -246,8 +246,13 @@ export class Parser {
       const frontItem = rpn.dequeue()!;
 
       if (!this.mathematicalExpressions.has(frontItem)) {
-        let val = this.variables.get(frontItem)?.toString() ?? frontItem;
-        calcStack.push(Big(Number.parseFloat(val)));
+        calcStack.push(
+          Big(
+            Number.parseFloat(
+              this.variables.get(frontItem)?.toString() ?? frontItem
+            )
+          )
+        );
       } else {
         let operator = frontItem;
         let numB = calcStack.pop()!;
@@ -269,7 +274,6 @@ export class Parser {
       }
     }
 
-    console.log("amogus is: ", Function(`return ${calcStack.top()};`)());
     return calcStack.top()?.toNumber();
   }
 }

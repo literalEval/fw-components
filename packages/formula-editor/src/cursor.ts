@@ -4,7 +4,7 @@ export class Cursor {
       charCount = -1,
       node;
 
-    console.log(selection?.focusNode);
+    // console.log(selection?.focusNode);
     if (selection?.focusNode) {
       if (Cursor._isChildOf(selection.focusNode, parentElement)) {
         node = selection.focusNode;

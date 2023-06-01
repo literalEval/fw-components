@@ -72,12 +72,13 @@ export class FormulaEditor extends LitElement {
 
   handleChange(event: InputEvent) {
     this.content = (event.target as HTMLDivElement).innerText;
-    this.parseInput(null);
+    this.parseInput();
+    console.log("handel change called");
     (event.target as HTMLDivElement).focus();
   }
 
   onClickRecommendation(recommendation: string) {
-    console.log(recommendation);
+    // console.log(recommendation);
 
     let editor = document.getElementById("wysiwyg-editor");
     if (!editor) return;
@@ -103,12 +104,13 @@ export class FormulaEditor extends LitElement {
     );
 
     this.recommendations = parseOutput.recommendations;
+    // console.log(this.recommendations);
     this.formattedContent = parseOutput.formattedContent;
     this.errorStr = parseOutput.error;
     editor.innerHTML = parseOutput.formattedString!;
+    this.content = (editor as HTMLDivElement).innerText;
 
     if (addRecommendation) {
-      this.content = (editor as HTMLDivElement).innerText;
       this.recommendations = null;
       this.currentCursorPosition = parseOutput.newCursorPosition;
     }
@@ -116,7 +118,7 @@ export class FormulaEditor extends LitElement {
     Cursor.setCurrentCursorPosition(this.currentCursorPosition!, editor);
     editor?.focus();
 
-    this.calculatedResult = this._parser.calculate(this.content)!;
+    // this.calculatedResult = this._parser.calculate(this.content)!;
     this.requestUpdate();
   }
 
@@ -135,7 +137,7 @@ export class FormulaEditor extends LitElement {
   protected firstUpdated(
     _changedProperties: PropertyValueMap<any> | Map<PropertyKey, unknown>
   ): void {
-    this.parseInput(null);
+    // this.parseInput(null);
   }
 
   render() {
@@ -150,7 +152,6 @@ export class FormulaEditor extends LitElement {
         spellcheck="false"
         @input=${this.handleChange}
       ></div>
-      ${console.log(this.recommendations)}
       ${this.recommendations
         ? html`<suggestion-menu
             .recommendations=${this.recommendations.join(",")}
