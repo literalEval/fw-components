@@ -202,7 +202,11 @@ export class Parser {
           operatorStack.pop()!,
         ];
 
-        if (this.operatorPrecedence[opb] <= this.operatorPrecedence[symbol]) {
+        if (
+          this.operatorPrecedence[opb] < this.operatorPrecedence[symbol] ||
+          (this.operatorPrecedence[opb] === this.operatorPrecedence[symbol] &&
+            ["/", "-"].includes(symbol))
+        ) {
           strb = `(${b})`;
         } else {
           strb = `${b}`;
