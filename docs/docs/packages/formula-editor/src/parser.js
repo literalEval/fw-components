@@ -1,4 +1,4 @@
-import Big from "../../../../node_modules/big.js/big.mjs";
+import Big from "big.js/big.mjs";
 import { Expectation, Queue, Stack } from "./helpers.js";
 import { Recommender } from "./recommendor.js";
 export class Parser {
@@ -8,7 +8,7 @@ export class Parser {
       "/": 2,
       "*": 2,
       "+": 1,
-      "-": 1
+      "-": 1,
     };
     this.mappedFormula = "";
     this.variables = variables;
@@ -26,12 +26,14 @@ export class Parser {
       recommendations: null,
       formattedContent: null,
       formattedString: null,
-      newCursorPosition: prevCurPos !== null && prevCurPos !== void 0 ? prevCurPos : -1,
-      errorStr: null
+      newCursorPosition:
+        prevCurPos !== null && prevCurPos !== void 0 ? prevCurPos : -1,
+      errorStr: null,
     };
     console.log(tokens);
-    tokens.forEach(token => {
-      let isNumber = this.variables.has(token) || !Number.isNaN(Number.parseFloat(token));
+    tokens.forEach((token) => {
+      let isNumber =
+        this.variables.has(token) || !Number.isNaN(Number.parseFloat(token));
       let isOperator = this.mathematicalExpressions.has(token);
       let isSpace = token.trim() == "";
       let isBracket = token == "(" || token == ")";
@@ -42,17 +44,24 @@ export class Parser {
         return;
       }
 
-      if (currentPosition <= prevCurPos && currentPosition + token.length + 1 >= prevCurPos && !parseOutput.recommendations) {
+      if (
+        currentPosition <= prevCurPos &&
+        currentPosition + token.length + 1 >= prevCurPos &&
+        !parseOutput.recommendations
+      ) {
         // If a recommendation was provided, replace the correspoding
         // word with it and move the cursor forward, accordingly.
         if (recommendation) {
-          parseOutput.newCursorPosition += recommendation.length - token.length + 1;
+          parseOutput.newCursorPosition +=
+            recommendation.length - token.length + 1;
           token = recommendation;
         }
 
-        parseOutput.recommendations = this._recommender.getRecommendation(token);
+        parseOutput.recommendations =
+          this._recommender.getRecommendation(token);
         console.log(parseOutput.recommendations);
-      } else {// parseOutput.recommendations = null;
+      } else {
+        // parseOutput.recommendations = null;
       }
 
       let tokenClassName = "";
@@ -65,9 +74,15 @@ export class Parser {
         tokenClassName += " bracket";
       } else if (isOperator) {
         tokenClassName += " operator";
-      } else {}
+      } else {
+      }
 
-      if (expectation == Expectation.UNDEF || expectation == Expectation.VARIABLE && !isNumber && !isBracket || expectation == Expectation.OPERATOR && !isOperator || !isNumber && !isOperator) {
+      if (
+        expectation == Expectation.UNDEF ||
+        (expectation == Expectation.VARIABLE && !isNumber && !isBracket) ||
+        (expectation == Expectation.OPERATOR && !isOperator) ||
+        (!isNumber && !isOperator)
+      ) {
         tokenClassName += " error";
       }
 
@@ -75,10 +90,18 @@ export class Parser {
         if (bracketCount < 0) {
           parseOutput.errorStr = `Unexpected ')' at pos: ${currentPosition}`;
           expectation = Expectation.UNDEF;
-        } else if (expectation == Expectation.VARIABLE && !isNumber && !isBracket) {
+        } else if (
+          expectation == Expectation.VARIABLE &&
+          !isNumber &&
+          !isBracket
+        ) {
           parseOutput.errorStr = `Expected variable/number at pos: ${currentPosition}`;
           expectation = Expectation.UNDEF;
-        } else if (expectation == Expectation.OPERATOR && !isOperator && token != ")") {
+        } else if (
+          expectation == Expectation.OPERATOR &&
+          !isOperator &&
+          token != ")"
+        ) {
           parseOutput.errorStr = `Expected mathematical operator at pos: ${currentPosition}`;
           expectation = Expectation.UNDEF;
         } else if (!isNumber && !isOperator && !isBracket) {
@@ -96,7 +119,9 @@ export class Parser {
         }
       }
 
-      formattedString = `${formattedString}<span class="wysiwygInternals ${tokenClassName}">${token}</span>${recommendation ? " " : ""}`; // if (isNumber) {
+      formattedString = `${formattedString}<span class="wysiwygInternals ${tokenClassName}">${token}</span>${
+        recommendation ? " " : ""
+      }`; // if (isNumber) {
       //   expectation = Expectation.OPERATOR;
       // } else if (isOperator) {
       //   expectation = Expectation.VARIABLE;
@@ -120,7 +145,9 @@ export class Parser {
       return null;
     }
 
-    let tokens = formula.split(/([-+(),*/:?\s])/g).filter(el => !/\s+/.test(el) && el !== ""); // Implementing the Shunting Yard Algorithm (EW Dijkstra)
+    let tokens = formula
+      .split(/([-+(),*/:?\s])/g)
+      .filter((el) => !/\s+/.test(el) && el !== ""); // Implementing the Shunting Yard Algorithm (EW Dijkstra)
 
     const operatorStack = new Stack();
     const outputQueue = new Queue();
@@ -135,7 +162,11 @@ export class Parser {
 
         operatorStack.pop();
       } else if (this.mathematicalExpressions.has(token)) {
-        while (this.mathematicalExpressions.has(operatorStack.top()) && this.operatorPrecedence[token] <= this.operatorPrecedence[operatorStack.top()]) {
+        while (
+          this.mathematicalExpressions.has(operatorStack.top()) &&
+          this.operatorPrecedence[token] <=
+            this.operatorPrecedence[operatorStack.top()]
+        ) {
           outputQueue.enqueue(operatorStack.pop());
         }
 
@@ -149,7 +180,8 @@ export class Parser {
       outputQueue.enqueue(operatorStack.pop());
     }
 
-    (() => {// outputQueue?.print();
+    (() => {
+      // outputQueue?.print();
     })();
 
     return outputQueue;
@@ -169,25 +201,42 @@ export class Parser {
     }
 
     let lexedRPN = stringRPN // .replace(/\^/g, "**")
-    .split(/\s+/g).filter(el => !/\s+/.test(el) && el !== "");
+      .split(/\s+/g)
+      .filter((el) => !/\s+/.test(el) && el !== "");
     let operatorStack = new Stack();
     let resultStack = new Stack();
-    lexedRPN.forEach(symbol => {
+    lexedRPN.forEach((symbol) => {
       let stra, strb;
 
-      if (this.variables.has(symbol) || !isNaN(parseFloat(symbol)) && isFinite(parseFloat(symbol))) {
+      if (
+        this.variables.has(symbol) ||
+        (!isNaN(parseFloat(symbol)) && isFinite(parseFloat(symbol)))
+      ) {
         resultStack.push(symbol);
         operatorStack.push(null);
       } else if (Object.keys(this.operatorPrecedence).includes(symbol)) {
-        let [a, b, opa, opb] = [resultStack.pop(), resultStack.pop(), operatorStack.pop(), operatorStack.pop()];
+        let [a, b, opa, opb] = [
+          resultStack.pop(),
+          resultStack.pop(),
+          operatorStack.pop(),
+          operatorStack.pop(),
+        ];
 
-        if (this.operatorPrecedence[opb] <= this.operatorPrecedence[symbol] || this.operatorPrecedence[opb] === this.operatorPrecedence[symbol] && ["/", "-"].includes(symbol)) {
+        if (
+          this.operatorPrecedence[opb] <= this.operatorPrecedence[symbol] ||
+          (this.operatorPrecedence[opb] === this.operatorPrecedence[symbol] &&
+            ["/", "-"].includes(symbol))
+        ) {
           strb = `(${b})`;
         } else {
           strb = `${b}`;
         }
 
-        if (this.operatorPrecedence[opa] <= this.operatorPrecedence[symbol] || this.operatorPrecedence[opa] === this.operatorPrecedence[symbol] && ["/", "-"].includes(symbol)) {
+        if (
+          this.operatorPrecedence[opa] <= this.operatorPrecedence[symbol] ||
+          (this.operatorPrecedence[opa] === this.operatorPrecedence[symbol] &&
+            ["/", "-"].includes(symbol))
+        ) {
           stra = `(${a})`;
         } else {
           stra = `${a}`;
@@ -218,7 +267,18 @@ export class Parser {
       const frontItem = rpn.dequeue();
 
       if (!this.mathematicalExpressions.has(frontItem)) {
-        calcStack.push(Big(Number.parseFloat((_b = (_a = this.variables.get(frontItem)) === null || _a === void 0 ? void 0 : _a.toString()) !== null && _b !== void 0 ? _b : frontItem)));
+        calcStack.push(
+          Big(
+            Number.parseFloat(
+              (_b =
+                (_a = this.variables.get(frontItem)) === null || _a === void 0
+                  ? void 0
+                  : _a.toString()) !== null && _b !== void 0
+                ? _b
+                : frontItem
+            )
+          )
+        );
       } else {
         let operator = frontItem;
         let numB = calcStack.pop();
@@ -243,7 +303,8 @@ export class Parser {
       }
     }
 
-    return (_c = calcStack.top()) === null || _c === void 0 ? void 0 : _c.toNumber();
+    return (_c = calcStack.top()) === null || _c === void 0
+      ? void 0
+      : _c.toNumber();
   }
-
 } //# sourceMappingURL=parser.js.map

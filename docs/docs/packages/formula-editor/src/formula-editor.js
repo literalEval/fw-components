@@ -1,13 +1,25 @@
-var __decorate = this && this.__decorate || function (decorators, target, key, desc) {
-  var c = arguments.length,
-      r = c < 3 ? target : desc === null ? desc = Object.getOwnPropertyDescriptor(target, key) : desc,
+var __decorate =
+  (this && this.__decorate) ||
+  function (decorators, target, key, desc) {
+    var c = arguments.length,
+      r =
+        c < 3
+          ? target
+          : desc === null
+          ? (desc = Object.getOwnPropertyDescriptor(target, key))
+          : desc,
       d;
-  if (typeof Reflect === "object" && typeof Reflect.decorate === "function") r = Reflect.decorate(decorators, target, key, desc);else for (var i = decorators.length - 1; i >= 0; i--) if (d = decorators[i]) r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
-  return c > 3 && r && Object.defineProperty(target, key, r), r;
-};
+    if (typeof Reflect === "object" && typeof Reflect.decorate === "function")
+      r = Reflect.decorate(decorators, target, key, desc);
+    else
+      for (var i = decorators.length - 1; i >= 0; i--)
+        if ((d = decorators[i]))
+          r = (c < 3 ? d(r) : c > 3 ? d(target, key, r) : d(target, key)) || r;
+    return c > 3 && r && Object.defineProperty(target, key, r), r;
+  };
 
-import { html, LitElement } from "../../../../node_modules/lit/index.js";
-import { customElement, state } from "../../../../node_modules/lit/decorators.js";
+import { html, LitElement } from "../../../../node_modules/lit";
+import { customElement, state } from "../../../../node_modules/lit/decorators";
 import { Parser } from "./parser.js";
 import { Cursor } from "./cursor.js";
 import "./suggestion-menu.js";
@@ -23,7 +35,15 @@ let FormulaEditor = class FormulaEditor extends LitElement {
     // of knowing where the cursor previously was, other than storing it somewhere.
 
     this.currentCursorPosition = null;
-    this.variables = new Map([["a", 2], ["b", 3], ["c", 4], ["mohit", 0], ["mohini", 0.2], ["ravi", 7], ["ravipandey", 8]]);
+    this.variables = new Map([
+      ["a", 2],
+      ["b", 3],
+      ["c", 4],
+      ["mohit", 0],
+      ["mohini", 0.2],
+      ["ravi", 7],
+      ["ravipandey", 8],
+    ]);
     this.mathematicalExpressions = new Set(["+", "-", "*", "/"]);
     this.styles = `
     #wysiwyg-editor {
@@ -72,9 +92,15 @@ let FormulaEditor = class FormulaEditor extends LitElement {
     // TODO: Research if cursor-detection can work with shadow-root somehow
     let editor = document.getElementById("wysiwyg-editor");
     if (!editor) return;
-    this.currentCursorPosition = addRecommendation ? this.currentCursorPosition : Cursor.getCurrentCursorPosition(editor);
+    this.currentCursorPosition = addRecommendation
+      ? this.currentCursorPosition
+      : Cursor.getCurrentCursorPosition(editor);
 
-    const parseOutput = this._parser.parseInput(this.content, this.currentCursorPosition, addRecommendation);
+    const parseOutput = this._parser.parseInput(
+      this.content,
+      this.currentCursorPosition,
+      addRecommendation
+    );
 
     this.recommendations = parseOutput.recommendations; // console.log(this.recommendations);
 
@@ -98,17 +124,20 @@ let FormulaEditor = class FormulaEditor extends LitElement {
     var _a;
 
     this.calculatedResult = this._parser.calculate(this.content);
-    this.content = (_a = this._parser.addParens(this.content)) !== null && _a !== void 0 ? _a : this.content;
+    this.content =
+      (_a = this._parser.addParens(this.content)) !== null && _a !== void 0
+        ? _a
+        : this.content;
     this.parseInput();
     this.requestUpdate();
   } // Disable shadow-root as it messes up cursor detection.
-
 
   createRenderRoot() {
     return this;
   }
 
-  firstUpdated(_changedProperties) {// this.parseInput(null);
+  firstUpdated(_changedProperties) {
+    // this.parseInput(null);
   }
 
   render() {
@@ -123,16 +152,17 @@ let FormulaEditor = class FormulaEditor extends LitElement {
         spellcheck="false"
         @input=${this.handleChange}
       ></div>
-      ${this.recommendations ? html`<suggestion-menu
+      ${this.recommendations
+        ? html`<suggestion-menu
             .recommendations=${this.recommendations.join(",")}
-            .onClickRecommendation=${e => this.onClickRecommendation(e)}
-          ></suggestion-menu>` : html``}
+            .onClickRecommendation=${(e) => this.onClickRecommendation(e)}
+          ></suggestion-menu>`
+        : html``}
       <button @click=${this.requestCalculate}>Calculate</button>
       <p style="color: red;">${this.errorStr}</p>
       <p>${this.calculatedResult}</p>
     `;
   }
-
 };
 
 __decorate([state()], FormulaEditor.prototype, "content", void 0);
