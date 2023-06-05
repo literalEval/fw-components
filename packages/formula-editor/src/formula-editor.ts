@@ -35,14 +35,16 @@ export class FormulaEditor extends LitElement {
 
   currentCursorPosition: number | null = null;
 
+  @property()
   variables = new Map([
     ["a", 2],
-    ["b", 3],
+    ["b", 3.0000002],
     ["c", 4],
-    ["mohit", 0],
-    ["mohini", 0.2],
-    ["ravi", 7],
-    ["ravipandey", 8],
+    ["xyz", 0],
+    ["sus", -420420420420],
+    ["qwe", -0.000000000002],
+    ["qib", 1000000000000],
+    ["rii", -0.1000000001],
   ]);
   mathematicalExpressions = new Set(["+", "-", "*", "/"]);
 
@@ -163,6 +165,16 @@ export class FormulaEditor extends LitElement {
       <button @click=${this.requestCalculate}>Calculate</button>
       <p style="color: red;">${this.errorStr}</p>
       <p>${this.calculatedResult}</p>
+      <div>
+        ["a", 2],<br />
+        ["b", 3.0000002],<br />
+        ["c", 4],<br />
+        ["xyz", 0],<br />
+        ["sus", -420420420420],<br />
+        ["qwe", -0.000000000002],<br />
+        ["qib", 1000000000000],<br />
+        ["rii", -0.1000000001]
+      </div>
     `;
   }
 }
