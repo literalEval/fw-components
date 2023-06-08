@@ -11,15 +11,16 @@ export interface ParseOutput {
 }
 
 export class Parser {
-  constructor(variables: Map<string, number>) {
+  constructor(variables: Map<string, number>, minSuggestionLen: number) {
     this.variables = variables;
-    this._recommender = new Recommender(this.variables);
+
+    this._recommender = new Recommender(this.variables, minSuggestionLen);
   }
 
   private _recommender: Recommender;
 
   variables: Map<string, number>;
-  mathematicalExpressions: Set<string> = new Set(["+", "-", "*", "/"]);
+  mathematicalOperators: Set<string> = new Set(["+", "-", "*", "/"]);
   operatorPrecedence: { [key: string]: number } = {
     "^": 3,
     "/": 2,
@@ -27,7 +28,6 @@ export class Parser {
     "+": 1,
     "-": 1,
   };
-  mappedFormula: string = "";
 
   parseInput(
     formula: string,
@@ -52,7 +52,7 @@ export class Parser {
     tokens.forEach((token) => {
       let isNumber =
         this.variables.has(token) || !Number.isNaN(Number.parseFloat(token));
-      let isOperator = this.mathematicalExpressions.has(token);
+      let isOperator = this.mathematicalOperators.has(token);
       let isSpace = token.trim() == "";
       let isBracket = token == "(" || token == ")";
 
@@ -187,9 +187,9 @@ export class Parser {
         }
 
         operatorStack.pop();
-      } else if (this.mathematicalExpressions.has(token)) {
+      } else if (this.mathematicalOperators.has(token)) {
         while (
-          this.mathematicalExpressions.has(operatorStack.top()!) &&
+          this.mathematicalOperators.has(operatorStack.top()!) &&
           this.operatorPrecedence[token] <=
             this.operatorPrecedence[operatorStack.top()!]
         ) {
@@ -293,7 +293,7 @@ export class Parser {
     while (!rpn.empty()) {
       const frontItem = rpn.dequeue()!;
 
-      if (!this.mathematicalExpressions.has(frontItem)) {
+      if (!this.mathematicalOperators.has(frontItem)) {
         calcStack.push(
           Big(
             Number.parseFloat(

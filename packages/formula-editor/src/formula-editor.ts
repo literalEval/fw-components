@@ -1,4 +1,4 @@
-import { html, LitElement } from "lit";
+import { html, LitElement, PropertyValueMap } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import { Parser } from "./parser.js";
 import { Cursor } from "./cursor.js";
@@ -11,7 +11,13 @@ export class FormulaEditor extends LitElement {
   constructor() {
     super();
 
-    this._parser = new Parser(this.variables);
+    this._parser = new Parser(this.variables, this.minSuggestionLen);
+  }
+
+  protected firstUpdated(
+    _changedProperties: PropertyValueMap<any> | Map<PropertyKey, unknown>
+  ): void {
+    this._parser = new Parser(this.variables, this.minSuggestionLen);
   }
 
   /**
@@ -58,6 +64,9 @@ export class FormulaEditor extends LitElement {
     },
   })
   variables = new Map();
+
+  @property()
+  minSuggestionLen: number = 2;
 
   styles = `
     #wysiwyg-editor {
