@@ -11,19 +11,15 @@ export interface ParseOutput {
 }
 
 export class Parser {
-  constructor(
-    variables: Map<string, number>,
-    mathematicalExpressions: Set<string>
-  ) {
+  constructor(variables: Map<string, number>) {
     this.variables = variables;
-    this.mathematicalExpressions = mathematicalExpressions;
     this._recommender = new Recommender(this.variables);
   }
 
   private _recommender: Recommender;
 
   variables: Map<string, number>;
-  mathematicalExpressions: Set<string>;
+  mathematicalExpressions: Set<string> = new Set(["+", "-", "*", "/"]);
   operatorPrecedence: { [key: string]: number } = {
     "^": 3,
     "/": 2,
@@ -175,6 +171,7 @@ export class Parser {
     let tokens = formula
       .split(/([-+(),*/:?\s])/g)
       .filter((el: string) => !/\s+/.test(el) && el !== "");
+    // this.calculatedResult = this._parser.calculate(this.content)!;
 
     // Implementing the Shunting Yard Algorithm (EW Dijkstra)
 

@@ -7,9 +7,7 @@ export class SuggestionMenu extends LitElement {
   recommendations: string = "";
 
   @property()
-  onClickRecommendation: Function = (recommendation: string) => {
-    // console.log(e);
-  };
+  onClickRecommendation: Function = (recommendation: string) => {};
 
   static styles = css`
     ul {
@@ -22,8 +20,6 @@ export class SuggestionMenu extends LitElement {
     }
 
     li {
-      /* width: fit-content; */
-      /* box-size: fit-content; */
       margin: 0px;
       padding: 2px 6px;
     }

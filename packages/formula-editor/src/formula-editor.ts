@@ -1,4 +1,4 @@
-import { html, css, LitElement, PropertyValueMap } from "lit";
+import { html, LitElement } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import { Parser } from "./parser.js";
 import { Cursor } from "./cursor.js";
@@ -11,40 +11,53 @@ export class FormulaEditor extends LitElement {
   constructor() {
     super();
 
-    this._parser = new Parser(this.variables, this.mathematicalExpressions);
+    this._parser = new Parser(this.variables);
   }
 
-  @state()
-  content: string = "";
+  /**
+   * These `states` and `properties` can't be defined as `static get properties`,
+   * because TS doesn't support that.
+   * @see https://github.com/lit/lit-element/issues/414
+   */
 
   @state()
-  formattedContent: Element | null = null;
+  _content: string = "";
 
   @state()
-  recommendations: string[] | null = null;
+  _formattedContent: Element | null = null;
 
   @state()
-  errorStr: string | null = null;
+  _recommendations: string[] | null = null;
 
   @state()
-  calculatedResult: number | null = null;
+  _errorStr: string | null = null;
 
-  // If this parseInput is called to add a recommendation, say by clicking,
-  // browser removes focus from the input box. In that case, we have no way
-  // of knowing where the cursor previously was, other than storing it somewhere.
+  @state()
+  _calculatedResult: number | null = null;
 
+  /**
+   * If `parseInput` is called to add a recommendation, say by clicking,
+   * browser removes focus from the input box. In that case, we have no way
+   * of knowing where the cursor previously was, other than storing it somewhere.
+   */
+
+  @state()
   currentCursorPosition: number | null = null;
 
-  variables = new Map([
-    ["a", 2],
-    ["b", 3],
-    ["c", 4],
-    ["mohit", 0],
-    ["mohini", 0.2],
-    ["ravi", 7],
-    ["ravipandey", 8],
-  ]);
-  mathematicalExpressions = new Set(["+", "-", "*", "/"]);
+  @property({
+    type: Map<string, number>,
+    converter: {
+      fromAttribute: (value) => {
+        if (value) {
+          return new Map<string, number>(JSON.parse(value));
+        }
+      },
+      toAttribute: (value: Map<string, number>) => {
+        return JSON.stringify(Array.from(value.entries()));
+      },
+    },
+  })
+  variables = new Map();
 
   styles = `
     #wysiwyg-editor {
@@ -73,15 +86,13 @@ export class FormulaEditor extends LitElement {
   `;
 
   handleChange(event: InputEvent) {
-    this.content = (event.target as HTMLDivElement).innerText;
+    console.log(this.variables);
+    this._content = (event.target as HTMLDivElement).innerText;
     this.parseInput();
-    console.log("handel change called");
     (event.target as HTMLDivElement).focus();
   }
 
   onClickRecommendation(recommendation: string) {
-    // console.log(recommendation);
-
     let editor = document.getElementById("wysiwyg-editor");
     if (!editor) return;
 
@@ -100,33 +111,31 @@ export class FormulaEditor extends LitElement {
       : Cursor.getCurrentCursorPosition(editor);
 
     const parseOutput = this._parser.parseInput(
-      this.content,
+      this._content,
       this.currentCursorPosition,
       addRecommendation
     );
 
-    this.recommendations = parseOutput.recommendations;
-    // console.log(this.recommendations);
-    this.formattedContent = parseOutput.formattedContent;
-    this.errorStr = parseOutput.errorStr;
+    this._recommendations = parseOutput.recommendations;
+    this._formattedContent = parseOutput.formattedContent;
+    this._errorStr = parseOutput.errorStr;
     editor.innerHTML = parseOutput.formattedString!;
-    this.content = (editor as HTMLDivElement).innerText;
+    this._content = (editor as HTMLDivElement).innerText;
 
     if (addRecommendation) {
-      this.recommendations = null;
+      this._recommendations = null;
       this.currentCursorPosition = parseOutput.newCursorPosition;
     }
 
     Cursor.setCurrentCursorPosition(this.currentCursorPosition!, editor);
     editor?.focus();
 
-    // this.calculatedResult = this._parser.calculate(this.content)!;
     this.requestUpdate();
   }
 
   requestCalculate() {
-    this.calculatedResult = this._parser.calculate(this.content)!;
-    this.content = this._parser.addParens(this.content) ?? this.content;
+    this._calculatedResult = this._parser.calculate(this._content)!;
+    this._content = this._parser.addParens(this._content) ?? this._content;
     this.parseInput();
     this.requestUpdate();
   }
@@ -134,12 +143,6 @@ export class FormulaEditor extends LitElement {
   // Disable shadow-root as it messes up cursor detection.
   createRenderRoot() {
     return this;
-  }
-
-  protected firstUpdated(
-    _changedProperties: PropertyValueMap<any> | Map<PropertyKey, unknown>
-  ): void {
-    // this.parseInput(null);
   }
 
   render() {
@@ -154,15 +157,15 @@ export class FormulaEditor extends LitElement {
         spellcheck="false"
         @input=${this.handleChange}
       ></div>
-      ${this.recommendations
+      ${this._recommendations
         ? html`<suggestion-menu
-            .recommendations=${this.recommendations.join(",")}
+            .recommendations=${this._recommendations.join(",")}
             .onClickRecommendation=${(e: any) => this.onClickRecommendation(e)}
           ></suggestion-menu>`
         : html``}
       <button @click=${this.requestCalculate}>Calculate</button>
-      <p style="color: red;">${this.errorStr}</p>
-      <p>${this.calculatedResult}</p>
+      <p style="color: red;">${this._errorStr}</p>
+      <p>${this._calculatedResult}</p>
     `;
   }
 }
