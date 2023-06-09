@@ -144,7 +144,10 @@ export class FormulaEditor extends LitElement {
 
   requestCalculate() {
     const calculatedResult = this._parser.calculate(this._content);
+    
     this._content = this._parser.addParens(this._content) ?? this._content;
+    this.parseInput();
+
     this._calculatedResult = calculatedResult ?? NaN;
     this._errorStr =
       calculatedResult == undefined
