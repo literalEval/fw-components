@@ -39,6 +39,7 @@ export class Parser {
     let expectation = Expectation.VARIABLE;
     let bracketCount = 0;
     let currentPosition = 0;
+    let prevToken = "";
     let parseOutput: ParseOutput = {
       recommendations: null,
       formattedContent: null,
@@ -99,7 +100,10 @@ export class Parser {
         expectation == Expectation.UNDEF ||
         (expectation == Expectation.VARIABLE && !isNumber && !isBracket) ||
         (expectation == Expectation.OPERATOR && !isOperator) ||
-        (!isNumber && !isOperator)
+        !(isNumber || isOperator) ||
+        (isNumber &&
+          prevToken == "/" &&
+          (this.variables.get(token) == 0 || Number.parseFloat(token) == 0))
       ) {
         tokenClassName += " error";
       }
@@ -122,8 +126,15 @@ export class Parser {
         ) {
           parseOutput.errorStr = `Expected mathematical operator at pos: ${currentPosition}`;
           expectation = Expectation.UNDEF;
-        } else if (!isNumber && !isOperator && !isBracket) {
+        } else if (!(isNumber || isOperator || isBracket)) {
           parseOutput.errorStr = `Unknown word at pos: ${currentPosition}`;
+          expectation = Expectation.UNDEF;
+        } else if (
+          isNumber &&
+          prevToken == "/" &&
+          (this.variables.get(token) == 0 || Number.parseFloat(token) == 0)
+        ) {
+          parseOutput.errorStr = `Division by zero at pos: ${currentPosition}`;
           expectation = Expectation.UNDEF;
         }
       }
@@ -151,6 +162,7 @@ export class Parser {
       // }
 
       currentPosition += token.length;
+      prevToken = token;
       console.log(token, expectation);
     });
 
@@ -306,18 +318,22 @@ export class Parser {
         let numB = calcStack.pop()!;
         let numA = calcStack.pop()!;
 
-        switch (operator) {
-          case "+":
-            calcStack.push(Big(numA).add(Big(numB)));
-            break;
-          case "-":
-            calcStack.push(Big(numA).sub(Big(numB)));
-            break;
-          case "*":
-            calcStack.push(Big(numA).mul(Big(numB)));
-            break;
-          case "/":
-            calcStack.push(Big(numA).div(Big(numB)));
+        try {
+          switch (operator) {
+            case "+":
+              calcStack.push(Big(numA).add(Big(numB)));
+              break;
+            case "-":
+              calcStack.push(Big(numA).sub(Big(numB)));
+              break;
+            case "*":
+              calcStack.push(Big(numA).mul(Big(numB)));
+              break;
+            case "/":
+              calcStack.push(Big(numA).div(Big(numB)));
+          }
+        } catch (err) {
+          return undefined;
         }
       }
     }
