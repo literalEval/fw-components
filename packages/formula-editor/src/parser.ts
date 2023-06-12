@@ -35,6 +35,7 @@ export class Parser {
     recommendation: string | null = null
   ): ParseOutput {
     let tokens = formula.split(/([-+(),*/:?\s])/g);
+    let parentheses = new Stack<number>();
     let formattedString = ``;
     let expectation = Expectation.VARIABLE;
     let bracketCount = 0;
@@ -87,8 +88,10 @@ export class Parser {
 
       if (token == "(") {
         bracketCount++;
+        parentheses.push(currentPosition);
         tokenClassName += " bracket";
       } else if (token == ")") {
+        parentheses.pop();
         bracketCount--;
         tokenClassName += " bracket";
       } else if (isOperator) {
@@ -171,6 +174,10 @@ export class Parser {
 
     parseOutput.formattedContent = doc.querySelector("body")!;
     parseOutput.formattedString = formattedString;
+
+    if (!parentheses.empty()) {
+      parseOutput.errorStr = `Unclosed '(' at position: ${parentheses.top()}`;
+    }
 
     return parseOutput;
   }
