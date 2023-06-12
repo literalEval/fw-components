@@ -11,7 +11,9 @@ export class SuggestionMenu extends LitElement {
 
   static styles = css`
     ul {
-      border: 1px solid grey;
+      border: 1px solid white;
+      color: #bab6c0;
+      background-color: #363537;
       box-sizing: border-box;
       width: fit-content;
       list-style-type: none;
@@ -25,7 +27,10 @@ export class SuggestionMenu extends LitElement {
     }
 
     li:focus-visible {
-      outline: 1px solid red;
+      /* outline: 1px solid red; */
+      outline: 0px;
+      color: #fce566;
+      background-color: #69676c;
     }
   `;
 

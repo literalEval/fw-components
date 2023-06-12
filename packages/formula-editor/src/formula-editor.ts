@@ -50,6 +50,9 @@ export class FormulaEditor extends LitElement {
   @state()
   currentCursorPosition: number | null = null;
 
+  @state()
+  currentCursorRect: DOMRect | undefined = undefined;
+
   @property({
     type: Map<string, number>,
     converter: {
@@ -73,6 +76,9 @@ export class FormulaEditor extends LitElement {
       display: inline-block;
       border: none;
       padding: 4px;
+      caret-color: #fff;
+      color: #F7F1FF;
+      line-height: 1.1;
     }
 
     #wysiwyg-editor:focus {
@@ -81,20 +87,31 @@ export class FormulaEditor extends LitElement {
 
     .wysiwygInternals.error {
       text-decoration: underline;
+      -webkit-text-decoration-color: #FC514F;
+      text-decoration-color: #FC514F;
+      -webkit-text-decoration-style: wavy;
+      text-decoration-style: wavy;
+      text-decoration-thickness: 1px;
       text-decoration-color: red;
+
     }
 
     .wysiwygInternals.bracket {
-      color: #AA3731;
+      color: #FC514F;
     }
 
     .wysiwygInternals.operator {
       font-weight: bold;
-      color: #777777;
+      color: #FC618D;
+    }
+
+    .wysiwygInternals.variable {
+      color: #FC618D;
     }
   `;
 
   handleChange(event: InputEvent) {
+    event.preventDefault();
     console.log(this.variables);
     this._content = (event.target as HTMLDivElement).innerText;
     this.parseInput();
@@ -139,12 +156,25 @@ export class FormulaEditor extends LitElement {
     Cursor.setCurrentCursorPosition(this.currentCursorPosition!, editor);
     editor?.focus();
 
+    // const range = window.getSelection()?.getRangeAt(0);
+    // const height = range?.getClientRects()[0].height;
+    console.log(window.getComputedStyle(editor).lineHeight);
+
+    let selection = window.getSelection(),
+      range = selection?.getRangeAt(0),
+      rect = range?.getClientRects()[0];
+
+    this.currentCursorRect = rect;
+
+    console.log(rect);
+    console.log(this.currentCursorRect?.top);
+
     this.requestUpdate();
   }
 
   requestCalculate() {
     const calculatedResult = this._parser.calculate(this._content);
-    
+
     this._content = this._parser.addParens(this._content) ?? this._content;
     this.parseInput();
 
@@ -154,6 +184,14 @@ export class FormulaEditor extends LitElement {
         ? "Division by zero encountered"
         : this._errorStr;
 
+    this._recommendations = null;
+    this.requestUpdate();
+  }
+
+  requestFormat() {
+    this._content = this._parser.addParens(this._content) ?? this._content;
+    this.parseInput();
+    this._recommendations = null;
     this.requestUpdate();
   }
 
@@ -167,21 +205,34 @@ export class FormulaEditor extends LitElement {
       <style>
         ${this.styles}
       </style>
-      <div
-        contenteditable
-        id="wysiwyg-editor"
-        style="min-width: 200px; height: 30px; border: 0px solid black; outline: 1px solid black;"
-        spellcheck="false"
-        @input=${this.handleChange}
-      ></div>
+      <div>
+        <div
+          contenteditable
+          id="wysiwyg-editor"
+          style="width: 320px; min-height: 320px; border-radius: 4px; border: 0px solid black; outline: 2px solid black; white-space: pre-wrap; background-color: #222222"
+          spellcheck="false"
+          @input=${this.handleChange}
+        ></div>
+      </div>
       ${this._recommendations
-        ? html`<suggestion-menu
-            .recommendations=${this._recommendations.join(",")}
-            .onClickRecommendation=${(e: any) => this.onClickRecommendation(e)}
-          ></suggestion-menu>`
+        ? html`<div
+            style="position: absolute; left: ${this.currentCursorRect?.left +
+            "px"}; top: ${this.currentCursorRect?.top + "px"}"
+          >
+            <suggestion-menu
+              .recommendations=${this._recommendations.join(",")}
+              .onClickRecommendation=${(e: any) =>
+                this.onClickRecommendation(e)}
+            ></suggestion-menu>
+          </div>`
         : html``}
+      <div
+        style="color: #FC514F; outline: 2px solid black; background-color: #222222; padding: 4px 4px; margin: 0px 0px 8px 0px;"
+      >
+        ${this._errorStr}
+      </div>
       <button @click=${this.requestCalculate}>Calculate</button>
-      <p style="color: red;">${this._errorStr}</p>
+      <button @click=${this.requestFormat}>Format</button>
       <p>${this._calculatedResult}</p>
     `;
   }
