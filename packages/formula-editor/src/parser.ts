@@ -175,6 +175,10 @@ export class Parser {
       console.log(token, expectation);
     });
 
+    if (this.mathematicalOperators.has(prevToken)) {
+      parseOutput.errorStr = "Unexpected ending of formula.";
+    }
+
     const parser = new DOMParser();
     const doc = parser.parseFromString(formattedString, "text/html");
 

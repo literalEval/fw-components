@@ -1,9 +1,7 @@
 import { html, LitElement, PropertyValueMap } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
-import {
-  PrimaryButtonStyles,
-  TextButtonStyles,
-} from "../../styles/src/button-styles.js";
+import { FormulaEditorStyles } from "./styles/formula-editor-styles.js";
+import { TextButtonStyles } from "../../styles/src/button-styles.js";
 import { Parser } from "./parser.js";
 import { Cursor } from "./cursor.js";
 import "./suggestion-menu.js";
@@ -74,45 +72,6 @@ export class FormulaEditor extends LitElement {
 
   @property()
   minSuggestionLen: number = 2;
-
-  styles = `
-    #wysiwyg-editor {
-      display: inline-block;
-      border: none;
-      padding: 4px;
-      caret-color: #fff;
-      color: #F7F1FF;
-      line-height: 1.1;
-    }
-
-    #wysiwyg-editor:focus {
-      border: none;
-    }
-
-    .wysiwygInternals.error {
-      text-decoration: underline;
-      -webkit-text-decoration-color: #FC514F;
-      text-decoration-color: #FC514F;
-      -webkit-text-decoration-style: wavy;
-      text-decoration-style: wavy;
-      text-decoration-thickness: 1px;
-      text-decoration-color: red;
-
-    }
-
-    .wysiwygInternals.bracket {
-      color: #FC514F;
-    }
-
-    .wysiwygInternals.operator {
-      font-weight: bold;
-      color: #FC618D;
-    }
-
-    .wysiwygInternals.variable {
-      color: #FC618D;
-    }
-  `;
 
   handleChange(event: InputEvent) {
     event.preventDefault();
@@ -197,22 +156,26 @@ export class FormulaEditor extends LitElement {
   render() {
     return html`
       <style>
-        ${this.styles}
+        ${FormulaEditorStyles}
         ${TextButtonStyles}
       </style>
       <div>
         <div
           contenteditable
           id="wysiwyg-editor"
-          style="width: 320px; height: 320px; border-radius: 4px 4px 0px 0px; overflow: auto; border: 0px solid black; outline: 2px solid black; white-space: pre-wrap; background-color: #222222"
           spellcheck="false"
           @input=${this.handleChange}
         ></div>
       </div>
       ${this._recommendations
         ? html`<div
-            style="position: absolute; left: ${this.currentCursorRect?.left +
-            "px"}; top: ${this.currentCursorRect?.top + "px"}"
+            style="
+              position: absolute; 
+              left: ${this.currentCursorRect?.left + "px"}; 
+              top: ${(this.currentCursorRect?.top ?? 0) +
+            window.scrollY +
+            "px"};
+            "
           >
             <suggestion-menu
               .recommendations=${this._recommendations}
@@ -221,10 +184,8 @@ export class FormulaEditor extends LitElement {
             ></suggestion-menu>
           </div>`
         : html``}
-      <div
-        style="border-radius: 0px 0px 4px 4px; color: #FC514F; outline: 2px solid black; background-color: #222222; padding: 4px 4px; margin: 0px 0px 8px 0px;"
-      >
-        ${this._errorStr}
+      <div id="wysiwyg-err" class="${this._errorStr ?? "wysiwyg-no-err"}">
+        ${this._errorStr ?? "No Errors"}
       </div>
       <button class="primary-text-button" @click=${this.requestCalculate}>
         Calculate
