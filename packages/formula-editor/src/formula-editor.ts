@@ -215,7 +215,7 @@ export class FormulaEditor extends LitElement {
             "px"}; top: ${this.currentCursorRect?.top + "px"}"
           >
             <suggestion-menu
-              .recommendations=${this._recommendations.join(",")}
+              .recommendations=${this._recommendations}
               .onClickRecommendation=${(e: any) =>
                 this.onClickRecommendation(e)}
             ></suggestion-menu>

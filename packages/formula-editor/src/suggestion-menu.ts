@@ -4,7 +4,7 @@ import { customElement, property } from "lit/decorators.js";
 @customElement("suggestion-menu")
 export class SuggestionMenu extends LitElement {
   @property()
-  recommendations: string = "";
+  recommendations: string[] = [];
 
   @property()
   onClickRecommendation: Function = (recommendation: string) => {};
@@ -46,7 +46,7 @@ export class SuggestionMenu extends LitElement {
   render() {
     return html`
       <ul class="wysiwyg-suggestion-menu">
-        ${this.recommendations.split(",").map((recommendation) => {
+        ${this.recommendations.map((recommendation) => {
           return html`<li
             tabindex="0"
             @click=${(e: any) => this.onClickRecommendation(recommendation)}
