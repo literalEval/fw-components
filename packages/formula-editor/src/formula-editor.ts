@@ -131,8 +131,6 @@ export class FormulaEditor extends LitElement {
   }
 
   parseInput(addRecommendation: string | null = null) {
-    // TODO: Research if cursor-detection can work with shadow-root somehow
-
     let editor = document.getElementById("wysiwyg-editor");
     if (!editor) return;
 
@@ -160,18 +158,10 @@ export class FormulaEditor extends LitElement {
     Cursor.setCurrentCursorPosition(this.currentCursorPosition!, editor);
     editor?.focus();
 
-    // const range = window.getSelection()?.getRangeAt(0);
-    // const height = range?.getClientRects()[0].height;
-    console.log(window.getComputedStyle(editor).lineHeight);
-
-    let selection = window.getSelection(),
-      range = selection?.getRangeAt(0),
-      rect = range?.getClientRects()[0];
-
-    this.currentCursorRect = rect;
-
-    console.log(rect);
-    console.log(this.currentCursorRect?.top);
+    this.currentCursorRect = window
+      .getSelection()
+      ?.getRangeAt(0)
+      ?.getClientRects()[0];
 
     this.requestUpdate();
   }
