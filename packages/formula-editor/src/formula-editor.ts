@@ -1,5 +1,9 @@
 import { html, LitElement, PropertyValueMap } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
+import {
+  PrimaryButtonStyles,
+  TextButtonStyles,
+} from "../../styles/src/button-styles.js";
 import { Parser } from "./parser.js";
 import { Cursor } from "./cursor.js";
 import "./suggestion-menu.js";
@@ -204,12 +208,13 @@ export class FormulaEditor extends LitElement {
     return html`
       <style>
         ${this.styles}
+        ${TextButtonStyles}
       </style>
       <div>
         <div
           contenteditable
           id="wysiwyg-editor"
-          style="width: 420px; min-height: 380px; border-radius: 4px; border: 0px solid black; outline: 2px solid black; white-space: pre-wrap; background-color: #222222"
+          style="width: 320px; height: 320px; border-radius: 4px 4px 0px 0px; overflow: auto; border: 0px solid black; outline: 2px solid black; white-space: pre-wrap; background-color: #222222"
           spellcheck="false"
           @input=${this.handleChange}
         ></div>
@@ -227,12 +232,16 @@ export class FormulaEditor extends LitElement {
           </div>`
         : html``}
       <div
-        style="color: #FC514F; outline: 2px solid black; background-color: #222222; padding: 4px 4px; margin: 0px 0px 8px 0px;"
+        style="border-radius: 0px 0px 4px 4px; color: #FC514F; outline: 2px solid black; background-color: #222222; padding: 4px 4px; margin: 0px 0px 8px 0px;"
       >
         ${this._errorStr}
       </div>
-      <button @click=${this.requestCalculate}>Calculate</button>
-      <button @click=${this.requestFormat}>Format</button>
+      <button class="primary-text-button" @click=${this.requestCalculate}>
+        Calculate
+      </button>
+      <button class="primary-text-button" @click=${this.requestFormat}>
+        Format
+      </button>
       <p>${this._calculatedResult}</p>
     `;
   }

@@ -24,6 +24,7 @@ export class SuggestionMenu extends LitElement {
     li {
       margin: 0px;
       padding: 2px 6px;
+      cursor: pointer;
     }
 
     li:focus-visible {
