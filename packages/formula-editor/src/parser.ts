@@ -34,29 +34,31 @@ export class Parser {
     prevCurPos: number | null = null,
     recommendation: string | null = null
   ): ParseOutput {
-    let tokens = formula.split(/([-+(),*/:?\s])/g);
-    let parentheses = new Stack<number>();
-    let formattedString = ``;
-    let expectation = Expectation.VARIABLE;
-    let bracketCount = 0;
-    let currentPosition = 0;
-    let prevToken = "";
-    let parseOutput: ParseOutput = {
-      recommendations: null,
-      formattedContent: null,
-      formattedString: null,
-      newCursorPosition: prevCurPos ?? -1,
-      errorStr: null,
-    };
+    let tokens = formula.split(/([-+(),*/:?\s])/g),
+      parentheses = new Stack<number>(),
+      formattedString = ``,
+      expectation = Expectation.VARIABLE,
+      bracketCount = 0,
+      currentPosition = 0,
+      prevToken = "",
+      parseOutput: ParseOutput = {
+        recommendations: null,
+        formattedContent: null,
+        formattedString: null,
+        newCursorPosition: prevCurPos ?? -1,
+        errorStr: null,
+      };
 
     console.log(tokens);
 
     tokens.forEach((token) => {
       let isNumber =
-        this.variables.has(token) || !Number.isNaN(Number.parseFloat(token));
-      let isOperator = this.mathematicalOperators.has(token);
-      let isSpace = token.trim() == "";
-      let isBracket = token == "(" || token == ")";
+          this.variables.has(token) ||
+          (recommendation && this.variables.has(recommendation)) ||
+          !Number.isNaN(Number.parseFloat(token)),
+        isOperator = this.mathematicalOperators.has(token),
+        isSpace = token.trim() == "",
+        isBracket = token == "(" || token == ")";
 
       if (isSpace) {
         formattedString = `${formattedString}${token}`;
@@ -72,9 +74,15 @@ export class Parser {
         // If a recommendation was provided, replace the correspoding
         // word with it and move the cursor forward, accordingly.
         if (recommendation) {
-          parseOutput.newCursorPosition +=
-            recommendation.length - token.length + 1;
-          token = recommendation;
+          parseOutput.newCursorPosition = Math.min(
+            parseOutput.newCursorPosition +
+              recommendation.length -
+              token.length +
+              1,
+            formula.length + recommendation.length - token.length + 1
+          );
+          token = recommendation + " ";
+          recommendation = null;
         }
 
         parseOutput.recommendations =
@@ -103,7 +111,7 @@ export class Parser {
         expectation == Expectation.UNDEF ||
         (expectation == Expectation.VARIABLE && !isNumber && !isBracket) ||
         (expectation == Expectation.OPERATOR && !isOperator) ||
-        !(isNumber || isOperator) ||
+        !(isNumber || isOperator || isBracket) ||
         (isNumber &&
           prevToken == "/" &&
           (this.variables.get(token) == 0 || Number.parseFloat(token) == 0))
@@ -151,9 +159,7 @@ export class Parser {
         }
       }
 
-      formattedString = `${formattedString}<span class="wysiwygInternals ${tokenClassName}">${token}</span>${
-        recommendation ? " " : ""
-      }`;
+      formattedString = `${formattedString}<span class="wysiwygInternals ${tokenClassName}">${token}</span>`;
 
       // if (isNumber) {
       //   expectation = Expectation.OPERATOR;
