@@ -1,4 +1,4 @@
-import { html, css, LitElement, PropertyValueMap } from "lit";
+import { html, LitElement, PropertyValueMap } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
 import { Parser } from "./parser.js";
 import { Cursor } from "./cursor.js";
@@ -11,48 +11,74 @@ export class FormulaEditor extends LitElement {
   constructor() {
     super();
 
-    this._parser = new Parser(this.variables, this.mathematicalExpressions);
+    this._parser = new Parser(this.variables, this.minSuggestionLen);
   }
 
-  @state()
-  content: string = "";
+  protected firstUpdated(
+    _changedProperties: PropertyValueMap<any> | Map<PropertyKey, unknown>
+  ): void {
+    this._parser = new Parser(this.variables, this.minSuggestionLen);
+  }
+
+  /**
+   * These `states` and `properties` can't be defined as `static get properties`,
+   * because TS doesn't support that.
+   * @see https://github.com/lit/lit-element/issues/414
+   */
 
   @state()
-  formattedContent: Element | null = null;
+  _content: string = "";
 
   @state()
-  recommendations: string[] | null = null;
+  _formattedContent: Element | null = null;
 
   @state()
-  errorStr: string | null = null;
+  _recommendations: string[] | null = null;
 
   @state()
-  calculatedResult: number | null = null;
+  _errorStr: string | null = null;
 
-  // If this parseInput is called to add a recommendation, say by clicking,
-  // browser removes focus from the input box. In that case, we have no way
-  // of knowing where the cursor previously was, other than storing it somewhere.
+  @state()
+  _calculatedResult: number | null = null;
 
+  /**
+   * If `parseInput` is called to add a recommendation, say by clicking,
+   * browser removes focus from the input box. In that case, we have no way
+   * of knowing where the cursor previously was, other than storing it somewhere.
+   */
+
+  @state()
   currentCursorPosition: number | null = null;
 
+  @state()
+  currentCursorRect: DOMRect | undefined = undefined;
+
+  @property({
+    type: Map<string, number>,
+    converter: {
+      fromAttribute: (value) => {
+        if (value) {
+          return new Map<string, number>(JSON.parse(value));
+        }
+      },
+      toAttribute: (value: Map<string, number>) => {
+        return JSON.stringify(Array.from(value.entries()));
+      },
+    },
+  })
+  variables = new Map();
+
   @property()
-  variables = new Map([
-    ["a", 2],
-    ["b", 3.0000002],
-    ["c", 4],
-    ["xyz", 0],
-    ["sus", -420420420420],
-    ["qwe", -0.000000000002],
-    ["qib", 1000000000000],
-    ["rii", -0.1000000001],
-  ]);
-  mathematicalExpressions = new Set(["+", "-", "*", "/"]);
+  minSuggestionLen: number = 2;
 
   styles = `
     #wysiwyg-editor {
       display: inline-block;
       border: none;
       padding: 4px;
+      caret-color: #fff;
+      color: #F7F1FF;
+      line-height: 1.1;
     }
 
     #wysiwyg-editor:focus {
@@ -61,29 +87,38 @@ export class FormulaEditor extends LitElement {
 
     .wysiwygInternals.error {
       text-decoration: underline;
+      -webkit-text-decoration-color: #FC514F;
+      text-decoration-color: #FC514F;
+      -webkit-text-decoration-style: wavy;
+      text-decoration-style: wavy;
+      text-decoration-thickness: 1px;
       text-decoration-color: red;
+
     }
 
     .wysiwygInternals.bracket {
-      color: #AA3731;
+      color: #FC514F;
     }
 
     .wysiwygInternals.operator {
       font-weight: bold;
-      color: #777777;
+      color: #FC618D;
+    }
+
+    .wysiwygInternals.variable {
+      color: #FC618D;
     }
   `;
 
   handleChange(event: InputEvent) {
-    this.content = (event.target as HTMLDivElement).innerText;
+    event.preventDefault();
+    console.log(this.variables);
+    this._content = (event.target as HTMLDivElement).innerText;
     this.parseInput();
-    console.log("handel change called");
     (event.target as HTMLDivElement).focus();
   }
 
   onClickRecommendation(recommendation: string) {
-    // console.log(recommendation);
-
     let editor = document.getElementById("wysiwyg-editor");
     if (!editor) return;
 
@@ -102,34 +137,61 @@ export class FormulaEditor extends LitElement {
       : Cursor.getCurrentCursorPosition(editor);
 
     const parseOutput = this._parser.parseInput(
-      this.content,
+      this._content,
       this.currentCursorPosition,
       addRecommendation
     );
 
-    this.recommendations = parseOutput.recommendations;
-    // console.log(this.recommendations);
-    this.formattedContent = parseOutput.formattedContent;
-    this.errorStr = parseOutput.errorStr;
+    this._recommendations = parseOutput.recommendations;
+    this._formattedContent = parseOutput.formattedContent;
+    this._errorStr = parseOutput.errorStr;
     editor.innerHTML = parseOutput.formattedString!;
-    this.content = (editor as HTMLDivElement).innerText;
+    this._content = (editor as HTMLDivElement).innerText;
 
     if (addRecommendation) {
-      this.recommendations = null;
+      this._recommendations = null;
       this.currentCursorPosition = parseOutput.newCursorPosition;
     }
 
     Cursor.setCurrentCursorPosition(this.currentCursorPosition!, editor);
     editor?.focus();
 
-    // this.calculatedResult = this._parser.calculate(this.content)!;
+    // const range = window.getSelection()?.getRangeAt(0);
+    // const height = range?.getClientRects()[0].height;
+    console.log(window.getComputedStyle(editor).lineHeight);
+
+    let selection = window.getSelection(),
+      range = selection?.getRangeAt(0),
+      rect = range?.getClientRects()[0];
+
+    this.currentCursorRect = rect;
+
+    console.log(rect);
+    console.log(this.currentCursorRect?.top);
+
     this.requestUpdate();
   }
 
   requestCalculate() {
-    this.calculatedResult = this._parser.calculate(this.content)!;
-    this.content = this._parser.addParens(this.content) ?? this.content;
+    const calculatedResult = this._parser.calculate(this._content);
+
+    this._content = this._parser.addParens(this._content) ?? this._content;
     this.parseInput();
+
+    this._calculatedResult = calculatedResult ?? NaN;
+    this._errorStr =
+      calculatedResult == undefined
+        ? "Division by zero encountered"
+        : this._errorStr;
+
+    this._recommendations = null;
+    this.requestUpdate();
+  }
+
+  requestFormat() {
+    this._content = this._parser.addParens(this._content) ?? this._content;
+    this.parseInput();
+    this._recommendations = null;
     this.requestUpdate();
   }
 
@@ -138,43 +200,40 @@ export class FormulaEditor extends LitElement {
     return this;
   }
 
-  protected firstUpdated(
-    _changedProperties: PropertyValueMap<any> | Map<PropertyKey, unknown>
-  ): void {
-    // this.parseInput(null);
-  }
-
   render() {
     return html`
       <style>
         ${this.styles}
       </style>
-      <div
-        contenteditable
-        id="wysiwyg-editor"
-        style="min-width: 200px; height: 30px; border: 0px solid black; outline: 1px solid black;"
-        spellcheck="false"
-        @input=${this.handleChange}
-      ></div>
-      ${this.recommendations
-        ? html`<suggestion-menu
-            .recommendations=${this.recommendations.join(",")}
-            .onClickRecommendation=${(e: any) => this.onClickRecommendation(e)}
-          ></suggestion-menu>`
-        : html``}
-      <button @click=${this.requestCalculate}>Calculate</button>
-      <p style="color: red;">${this.errorStr}</p>
-      <p>${this.calculatedResult}</p>
       <div>
-        ["a", 2],<br />
-        ["b", 3.0000002],<br />
-        ["c", 4],<br />
-        ["xyz", 0],<br />
-        ["sus", -420420420420],<br />
-        ["qwe", -0.000000000002],<br />
-        ["qib", 1000000000000],<br />
-        ["rii", -0.1000000001]
+        <div
+          contenteditable
+          id="wysiwyg-editor"
+          style="width: 320px; min-height: 320px; border-radius: 4px; border: 0px solid black; outline: 2px solid black; white-space: pre-wrap; background-color: #222222"
+          spellcheck="false"
+          @input=${this.handleChange}
+        ></div>
       </div>
+      ${this._recommendations
+        ? html`<div
+            style="position: absolute; left: ${this.currentCursorRect?.left +
+            "px"}; top: ${this.currentCursorRect?.top + "px"}"
+          >
+            <suggestion-menu
+              .recommendations=${this._recommendations.join(",")}
+              .onClickRecommendation=${(e: any) =>
+                this.onClickRecommendation(e)}
+            ></suggestion-menu>
+          </div>`
+        : html``}
+      <div
+        style="color: #FC514F; outline: 2px solid black; background-color: #222222; padding: 4px 4px; margin: 0px 0px 8px 0px;"
+      >
+        ${this._errorStr}
+      </div>
+      <button @click=${this.requestCalculate}>Calculate</button>
+      <button @click=${this.requestFormat}>Format</button>
+      <p>${this._calculatedResult}</p>
     `;
   }
 }

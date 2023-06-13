@@ -11,19 +11,16 @@ export interface ParseOutput {
 }
 
 export class Parser {
-  constructor(
-    variables: Map<string, number>,
-    mathematicalExpressions: Set<string>
-  ) {
+  constructor(variables: Map<string, number>, minSuggestionLen: number) {
     this.variables = variables;
-    this.mathematicalExpressions = mathematicalExpressions;
-    this._recommender = new Recommender(this.variables);
+
+    this._recommender = new Recommender(this.variables, minSuggestionLen);
   }
 
   private _recommender: Recommender;
 
   variables: Map<string, number>;
-  mathematicalExpressions: Set<string>;
+  mathematicalOperators: Set<string> = new Set(["+", "-", "*", "/"]);
   operatorPrecedence: { [key: string]: number } = {
     "^": 3,
     "/": 2,
@@ -31,7 +28,6 @@ export class Parser {
     "+": 1,
     "-": 1,
   };
-  mappedFormula: string = "";
 
   parseInput(
     formula: string,
@@ -39,10 +35,12 @@ export class Parser {
     recommendation: string | null = null
   ): ParseOutput {
     let tokens = formula.split(/([-+(),*/:?\s])/g);
+    let parentheses = new Stack<number>();
     let formattedString = ``;
     let expectation = Expectation.VARIABLE;
     let bracketCount = 0;
     let currentPosition = 0;
+    let prevToken = "";
     let parseOutput: ParseOutput = {
       recommendations: null,
       formattedContent: null,
@@ -56,7 +54,7 @@ export class Parser {
     tokens.forEach((token) => {
       let isNumber =
         this.variables.has(token) || !Number.isNaN(Number.parseFloat(token));
-      let isOperator = this.mathematicalExpressions.has(token);
+      let isOperator = this.mathematicalOperators.has(token);
       let isSpace = token.trim() == "";
       let isBracket = token == "(" || token == ")";
 
@@ -90,8 +88,10 @@ export class Parser {
 
       if (token == "(") {
         bracketCount++;
+        parentheses.push(currentPosition);
         tokenClassName += " bracket";
       } else if (token == ")") {
+        parentheses.pop();
         bracketCount--;
         tokenClassName += " bracket";
       } else if (isOperator) {
@@ -103,7 +103,10 @@ export class Parser {
         expectation == Expectation.UNDEF ||
         (expectation == Expectation.VARIABLE && !isNumber && !isBracket) ||
         (expectation == Expectation.OPERATOR && !isOperator) ||
-        (!isNumber && !isOperator)
+        !(isNumber || isOperator) ||
+        (isNumber &&
+          prevToken == "/" &&
+          (this.variables.get(token) == 0 || Number.parseFloat(token) == 0))
       ) {
         tokenClassName += " error";
       }
@@ -126,8 +129,15 @@ export class Parser {
         ) {
           parseOutput.errorStr = `Expected mathematical operator at pos: ${currentPosition}`;
           expectation = Expectation.UNDEF;
-        } else if (!isNumber && !isOperator && !isBracket) {
+        } else if (!(isNumber || isOperator || isBracket)) {
           parseOutput.errorStr = `Unknown word at pos: ${currentPosition}`;
+          expectation = Expectation.UNDEF;
+        } else if (
+          isNumber &&
+          prevToken == "/" &&
+          (this.variables.get(token) == 0 || Number.parseFloat(token) == 0)
+        ) {
+          parseOutput.errorStr = `Division by zero at pos: ${currentPosition}`;
           expectation = Expectation.UNDEF;
         }
       }
@@ -155,6 +165,7 @@ export class Parser {
       // }
 
       currentPosition += token.length;
+      prevToken = token;
       console.log(token, expectation);
     });
 
@@ -163,6 +174,10 @@ export class Parser {
 
     parseOutput.formattedContent = doc.querySelector("body")!;
     parseOutput.formattedString = formattedString;
+
+    if (!parentheses.empty()) {
+      parseOutput.errorStr = `Unclosed '(' at position: ${parentheses.top()}`;
+    }
 
     return parseOutput;
   }
@@ -175,6 +190,7 @@ export class Parser {
     let tokens = formula
       .split(/([-+(),*/:?\s])/g)
       .filter((el: string) => !/\s+/.test(el) && el !== "");
+    // this.calculatedResult = this._parser.calculate(this.content)!;
 
     // Implementing the Shunting Yard Algorithm (EW Dijkstra)
 
@@ -190,9 +206,9 @@ export class Parser {
         }
 
         operatorStack.pop();
-      } else if (this.mathematicalExpressions.has(token)) {
+      } else if (this.mathematicalOperators.has(token)) {
         while (
-          this.mathematicalExpressions.has(operatorStack.top()!) &&
+          this.mathematicalOperators.has(operatorStack.top()!) &&
           this.operatorPrecedence[token] <=
             this.operatorPrecedence[operatorStack.top()!]
         ) {
@@ -296,7 +312,7 @@ export class Parser {
     while (!rpn.empty()) {
       const frontItem = rpn.dequeue()!;
 
-      if (!this.mathematicalExpressions.has(frontItem)) {
+      if (!this.mathematicalOperators.has(frontItem)) {
         calcStack.push(
           Big(
             Number.parseFloat(
@@ -309,18 +325,22 @@ export class Parser {
         let numB = calcStack.pop()!;
         let numA = calcStack.pop()!;
 
-        switch (operator) {
-          case "+":
-            calcStack.push(Big(numA).add(Big(numB)));
-            break;
-          case "-":
-            calcStack.push(Big(numA).sub(Big(numB)));
-            break;
-          case "*":
-            calcStack.push(Big(numA).mul(Big(numB)));
-            break;
-          case "/":
-            calcStack.push(Big(numA).div(Big(numB)));
+        try {
+          switch (operator) {
+            case "+":
+              calcStack.push(Big(numA).add(Big(numB)));
+              break;
+            case "-":
+              calcStack.push(Big(numA).sub(Big(numB)));
+              break;
+            case "*":
+              calcStack.push(Big(numA).mul(Big(numB)));
+              break;
+            case "/":
+              calcStack.push(Big(numA).div(Big(numB)));
+          }
+        } catch (err) {
+          return undefined;
         }
       }
     }

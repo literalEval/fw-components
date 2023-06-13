@@ -1,7 +1,9 @@
 export class Recommender {
   private _trie: TrieNode;
+  private _minSuggestionLen: number;
 
-  constructor(variables: Map<string, number>) {
+  constructor(variables: Map<string, number>, minSuggestionLen: number) {
+    this._minSuggestionLen = minSuggestionLen > 0 ? minSuggestionLen : 1;
     this._trie = new TrieNode();
     this._trie.insertAll();
 
@@ -33,7 +35,7 @@ export class Recommender {
   }
 
   getRecommendation(word: string): string[] | null {
-    if (word.length < 2) {
+    if (word.length < this._minSuggestionLen) {
       return null;
     }
 
