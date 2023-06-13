@@ -209,7 +209,7 @@ export class FormulaEditor extends LitElement {
         <div
           contenteditable
           id="wysiwyg-editor"
-          style="width: 320px; min-height: 320px; border-radius: 4px; border: 0px solid black; outline: 2px solid black; white-space: pre-wrap; background-color: #222222"
+          style="width: 420px; min-height: 380px; border-radius: 4px; border: 0px solid black; outline: 2px solid black; white-space: pre-wrap; background-color: #222222"
           spellcheck="false"
           @input=${this.handleChange}
         ></div>
