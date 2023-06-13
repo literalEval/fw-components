@@ -55,7 +55,7 @@ export class Parser {
       let isNumber =
           this.variables.has(token) ||
           (recommendation && this.variables.has(recommendation)) ||
-          !Number.isNaN(Number.parseFloat(token)),
+          !Number.isNaN(Number(token)),
         isOperator = this.mathematicalOperators.has(token),
         isSpace = token.trim() == "",
         isBracket = token == "(" || token == ")";
@@ -114,7 +114,7 @@ export class Parser {
         !(isNumber || isOperator || isBracket) ||
         (isNumber &&
           prevToken == "/" &&
-          (this.variables.get(token) == 0 || Number.parseFloat(token) == 0))
+          (this.variables.get(token) == 0 || Number(token) == 0))
       ) {
         tokenClassName += " error";
       }
@@ -143,7 +143,7 @@ export class Parser {
         } else if (
           isNumber &&
           prevToken == "/" &&
-          (this.variables.get(token) == 0 || Number.parseFloat(token) == 0)
+          (this.variables.get(token) == 0 || Number(token) == 0)
         ) {
           parseOutput.errorStr = `Division by zero at pos: ${currentPosition}`;
           expectation = Expectation.UNDEF;
