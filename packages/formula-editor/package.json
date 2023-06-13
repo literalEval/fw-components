@@ -5,7 +5,7 @@
   "description": "A WYSIWYG type formula editor",
   "main": "dist/src/formula-editor.js",
   "scripts": {
-    "start": "es-dev-server --app-index index.html --node-resolve --watch --open",
+    "start": "es-dev-server --app-index ../../index.html --node-resolve --watch --open",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "dependencies": {
