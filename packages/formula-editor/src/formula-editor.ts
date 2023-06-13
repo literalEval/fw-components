@@ -112,7 +112,7 @@ export class FormulaEditor extends LitElement {
 
   handleChange(event: InputEvent) {
     event.preventDefault();
-    console.log(this.variables);
+    // console.log(this.variables);
     this._content = (event.target as HTMLDivElement).innerText;
     this.parseInput();
     (event.target as HTMLDivElement).focus();
@@ -158,7 +158,7 @@ export class FormulaEditor extends LitElement {
 
     // const range = window.getSelection()?.getRangeAt(0);
     // const height = range?.getClientRects()[0].height;
-    console.log(window.getComputedStyle(editor).lineHeight);
+    // console.log(window.getComputedStyle(editor).lineHeight);
 
     let selection = window.getSelection(),
       range = selection?.getRangeAt(0),
@@ -166,8 +166,8 @@ export class FormulaEditor extends LitElement {
 
     this.currentCursorRect = rect;
 
-    console.log(rect);
-    console.log(this.currentCursorRect?.top);
+    // console.log(rect);
+    // console.log(this.currentCursorRect?.top);
 
     this.requestUpdate();
   }

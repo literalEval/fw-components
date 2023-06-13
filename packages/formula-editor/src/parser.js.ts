@@ -49,7 +49,7 @@ export class Parser {
       errorStr: null,
     };
 
-    console.log(tokens);
+    // console.log(tokens);
 
     tokens.forEach((token) => {
       let isNumber =
@@ -79,7 +79,7 @@ export class Parser {
 
         parseOutput.recommendations =
           this._recommender.getRecommendation(token);
-        console.log(parseOutput.recommendations);
+        // console.log(parseOutput.recommendations);
       } else {
         // parseOutput.recommendations = null;
       }
@@ -144,7 +144,7 @@ export class Parser {
 
       if (expectation != Expectation.UNDEF) {
         if (token == "(" || isOperator) {
-          console.log("operator encountered ", token, expectation);
+          // console.log("operator encountered ", token, expectation);
           expectation = Expectation.VARIABLE;
         } else if (token == ")" || isNumber) {
           expectation = Expectation.OPERATOR;
@@ -166,7 +166,7 @@ export class Parser {
 
       currentPosition += token.length;
       prevToken = token;
-      console.log(token, expectation);
+      // console.log(token, expectation);
     });
 
     const parser = new DOMParser();
