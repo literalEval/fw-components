@@ -54,6 +54,13 @@ export class Recommender {
 
     this._traverseAndGet(recommendations, currentNode, word, currentPosition);
 
+    if (
+      recommendations.length == 0 ||
+      (recommendations.length == 1 && recommendations[0] == word)
+    ) {
+      return null;
+    }
+
     return recommendations;
   }
 

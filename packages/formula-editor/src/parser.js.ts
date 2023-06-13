@@ -63,12 +63,13 @@ export class Parser {
       if (isSpace) {
         formattedString = `${formattedString}${token}`;
         currentPosition += token.length;
+        console.log("isSpace", token.length);
         return;
       }
 
       if (
         currentPosition <= prevCurPos! &&
-        currentPosition + token.length + 1 >= prevCurPos! &&
+        currentPosition + token.length >= prevCurPos! &&
         !parseOutput.recommendations
       ) {
         // If a recommendation was provided, replace the correspoding
@@ -77,11 +78,10 @@ export class Parser {
           parseOutput.newCursorPosition = Math.min(
             parseOutput.newCursorPosition +
               recommendation.length -
-              token.length +
-              1,
-            formula.length + recommendation.length - token.length + 1
+              token.length,
+            formula.length + recommendation.length - token.length
           );
-          token = recommendation + " ";
+          token = recommendation;
           recommendation = null;
         }
 
