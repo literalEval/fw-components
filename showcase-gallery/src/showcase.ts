@@ -10,3 +10,5 @@ class ShowcaseGallery extends LitElement {
     html` <formula-editor></formula-editor> `;
   }
 }
+
+// customElements.get('showcase-gallery') || customElements.define('showcase-gallery', ShowcaseGallery);
