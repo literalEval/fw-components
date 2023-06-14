@@ -55,6 +55,9 @@ export class FormulaEditor extends LitElement {
   @state()
   currentCursorRect: DOMRect | undefined = undefined;
 
+  @state()
+  lastInputType: string = "undef";
+
   @property({
     type: Map<string, number>,
     converter: {
@@ -74,13 +77,9 @@ export class FormulaEditor extends LitElement {
   minSuggestionLen: number = 2;
 
   handleChange(event: InputEvent) {
-    // We don't want suggestions
-    if (event.inputType == 'insertCompositionText') {
-      return;
-    }
-
     event.preventDefault();
-    console.log(this.variables);
+    this.lastInputType = event.inputType;
+
     this._content = (event.target as HTMLDivElement).innerText;
     this.parseInput();
     (event.target as HTMLDivElement).focus();
@@ -112,7 +111,13 @@ export class FormulaEditor extends LitElement {
     this._recommendations = parseOutput.recommendations;
     this._formattedContent = parseOutput.formattedContent;
     this._errorStr = parseOutput.errorStr;
-    editor.innerHTML = parseOutput.formattedString!;
+
+    // Don't modify the text stream manually if the text is being composed,
+    // unless the user manually choses to do so by choosing a suggestion.
+    if (this.lastInputType != "insertCompositionText" || addRecommendation) {
+      editor.innerHTML = parseOutput.formattedString!;
+    }
+
     this._content = (editor as HTMLDivElement).innerText;
 
     if (addRecommendation) {
@@ -125,7 +130,6 @@ export class FormulaEditor extends LitElement {
     editor?.focus();
 
     this.currentCursorRect = Cursor.getCursorRect();
-
     this.requestUpdate();
   }
 
@@ -171,6 +175,7 @@ export class FormulaEditor extends LitElement {
         contenteditable
         id="wysiwyg-editor"
         spellcheck="false"
+        autocomplete="off"
         @input=${this.handleChange}
       ></div>
       ${this._recommendations
