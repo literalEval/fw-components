@@ -74,6 +74,7 @@ export class FormulaEditor extends LitElement {
   minSuggestionLen: number = 2;
 
   handleChange(event: InputEvent) {
+    console.log(event);
     event.preventDefault();
     console.log(this.variables);
     this._content = (event.target as HTMLDivElement).innerText;
@@ -95,7 +96,8 @@ export class FormulaEditor extends LitElement {
 
     this.currentCursorPosition = addRecommendation
       ? this.currentCursorPosition
-      : Cursor.getCurrentCursorPosition(editor);
+      : // : Cursor.getCurrentCursorPosition(editor);
+        Cursor.getCaret(editor);
 
     const parseOutput = this._parser.parseInput(
       this._content,
@@ -114,13 +116,11 @@ export class FormulaEditor extends LitElement {
       this.currentCursorPosition = parseOutput.newCursorPosition;
     }
 
-    Cursor.setCurrentCursorPosition(this.currentCursorPosition!, editor);
+    // Cursor.setCurrentCursorPosition(this.currentCursorPosition!, editor);
+    Cursor.setCaret(this.currentCursorPosition!, editor);
     editor?.focus();
 
-    this.currentCursorRect = window
-      .getSelection()
-      ?.getRangeAt(0)
-      ?.getClientRects()[0];
+    this.currentCursorRect = Cursor.getCursorRect();
 
     this.requestUpdate();
   }
