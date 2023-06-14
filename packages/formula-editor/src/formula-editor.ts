@@ -1,9 +1,7 @@
 import { html, LitElement, PropertyValueMap } from "lit";
 import { customElement, property, state } from "lit/decorators.js";
-import {
-  PrimaryButtonStyles,
-  TextButtonStyles,
-} from "../../styles/src/button-styles.js";
+import { FormulaEditorStyles } from "./styles/formula-editor-styles.js";
+import { TextButtonStyles } from "../../styles/src/button-styles.js";
 import { Parser } from "./parser.js";
 import { Cursor } from "./cursor.js";
 import "./suggestion-menu.js";
@@ -75,46 +73,8 @@ export class FormulaEditor extends LitElement {
   @property()
   minSuggestionLen: number = 2;
 
-  styles = `
-    #wysiwyg-editor {
-      display: inline-block;
-      border: none;
-      padding: 4px;
-      caret-color: #fff;
-      color: #F7F1FF;
-      line-height: 1.1;
-    }
-
-    #wysiwyg-editor:focus {
-      border: none;
-    }
-
-    .wysiwygInternals.error {
-      text-decoration: underline;
-      -webkit-text-decoration-color: #FC514F;
-      text-decoration-color: #FC514F;
-      -webkit-text-decoration-style: wavy;
-      text-decoration-style: wavy;
-      text-decoration-thickness: 1px;
-      text-decoration-color: red;
-
-    }
-
-    .wysiwygInternals.bracket {
-      color: #FC514F;
-    }
-
-    .wysiwygInternals.operator {
-      font-weight: bold;
-      color: #FC618D;
-    }
-
-    .wysiwygInternals.variable {
-      color: #FC618D;
-    }
-  `;
-
   handleChange(event: InputEvent) {
+    console.log(event);
     event.preventDefault();
     // console.log(this.variables);
     this._content = (event.target as HTMLDivElement).innerText;
@@ -131,14 +91,13 @@ export class FormulaEditor extends LitElement {
   }
 
   parseInput(addRecommendation: string | null = null) {
-    // TODO: Research if cursor-detection can work with shadow-root somehow
-
     let editor = document.getElementById("wysiwyg-editor");
     if (!editor) return;
 
     this.currentCursorPosition = addRecommendation
       ? this.currentCursorPosition
-      : Cursor.getCurrentCursorPosition(editor);
+      : // : Cursor.getCurrentCursorPosition(editor);
+        Cursor.getCaret(editor);
 
     const parseOutput = this._parser.parseInput(
       this._content,
@@ -157,26 +116,20 @@ export class FormulaEditor extends LitElement {
       this.currentCursorPosition = parseOutput.newCursorPosition;
     }
 
-    Cursor.setCurrentCursorPosition(this.currentCursorPosition!, editor);
+    // Cursor.setCurrentCursorPosition(this.currentCursorPosition!, editor);
+    Cursor.setCaret(this.currentCursorPosition!, editor);
     editor?.focus();
 
-    // const range = window.getSelection()?.getRangeAt(0);
-    // const height = range?.getClientRects()[0].height;
-    // console.log(window.getComputedStyle(editor).lineHeight);
-
-    let selection = window.getSelection(),
-      range = selection?.getRangeAt(0),
-      rect = range?.getClientRects()[0];
-
-    this.currentCursorRect = rect;
-
-    // console.log(rect);
-    // console.log(this.currentCursorRect?.top);
+    this.currentCursorRect = Cursor.getCursorRect();
 
     this.requestUpdate();
   }
 
   requestCalculate() {
+    if (this._parser.parseInput(this._content).errorStr) {
+      return;
+    }
+
     const calculatedResult = this._parser.calculate(this._content);
 
     this._content = this._parser.addParens(this._content) ?? this._content;
@@ -207,34 +160,34 @@ export class FormulaEditor extends LitElement {
   render() {
     return html`
       <style>
-        ${this.styles}
+        ${FormulaEditorStyles}
         ${TextButtonStyles}
       </style>
-      <div>
-        <div
-          contenteditable
-          id="wysiwyg-editor"
-          style="width: 320px; height: 320px; border-radius: 4px 4px 0px 0px; overflow: auto; border: 0px solid black; outline: 2px solid black; white-space: pre-wrap; background-color: #222222"
-          spellcheck="false"
-          @input=${this.handleChange}
-        ></div>
-      </div>
+      <div
+        contenteditable
+        id="wysiwyg-editor"
+        spellcheck="false"
+        @input=${this.handleChange}
+      ></div>
       ${this._recommendations
         ? html`<div
-            style="position: absolute; left: ${this.currentCursorRect?.left +
-            "px"}; top: ${this.currentCursorRect?.top + "px"}"
+            style="
+              position: absolute; 
+              left: ${this.currentCursorRect?.left + "px"}; 
+              top: ${(this.currentCursorRect?.top ?? 0) +
+            window.scrollY +
+            "px"};
+            "
           >
             <suggestion-menu
-              .recommendations=${this._recommendations.join(",")}
+              .recommendations=${this._recommendations}
               .onClickRecommendation=${(e: any) =>
                 this.onClickRecommendation(e)}
             ></suggestion-menu>
           </div>`
         : html``}
-      <div
-        style="border-radius: 0px 0px 4px 4px; color: #FC514F; outline: 2px solid black; background-color: #222222; padding: 4px 4px; margin: 0px 0px 8px 0px;"
-      >
-        ${this._errorStr}
+      <div id="wysiwyg-err" class="${this._errorStr ?? "wysiwyg-no-err"}">
+        ${this._errorStr ?? "No Errors"}
       </div>
       <button class="primary-text-button" @click=${this.requestCalculate}>
         Calculate

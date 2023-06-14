@@ -4,16 +4,16 @@ import { customElement, property } from "lit/decorators.js";
 @customElement("suggestion-menu")
 export class SuggestionMenu extends LitElement {
   @property()
-  recommendations: string = "";
+  recommendations: string[] = [];
 
   @property()
   onClickRecommendation: Function = (recommendation: string) => {};
 
   static styles = css`
     ul {
-      border: 1px solid white;
-      color: #bab6c0;
-      background-color: #363537;
+      border: 1px solid var(--fe-suggestion-color, white);
+      color: var(--fe-suggestion-color, #bab6c0);
+      background-color: var(--fe-suggestion-background-color, #363537);
       box-sizing: border-box;
       width: fit-content;
       list-style-type: none;
@@ -30,8 +30,8 @@ export class SuggestionMenu extends LitElement {
     li:focus-visible {
       /* outline: 1px solid red; */
       outline: 0px;
-      color: #fce566;
-      background-color: #69676c;
+      color: var(--fe-suggestion-focus-color, #fce566);
+      background-color: var(--fe-suggestion-focus-background-color, #69676c);
     }
   `;
 
@@ -46,7 +46,7 @@ export class SuggestionMenu extends LitElement {
   render() {
     return html`
       <ul class="wysiwyg-suggestion-menu">
-        ${this.recommendations.split(",").map((recommendation) => {
+        ${this.recommendations.map((recommendation) => {
           return html`<li
             tabindex="0"
             @click=${(e: any) => this.onClickRecommendation(recommendation)}

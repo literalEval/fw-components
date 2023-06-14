@@ -55,7 +55,7 @@ export class Parser {
       let isNumber =
           this.variables.has(token) ||
           (recommendation && this.variables.has(recommendation)) ||
-          !Number.isNaN(Number.parseFloat(token)),
+          !Number.isNaN(Number(token)),
         isOperator = this.mathematicalOperators.has(token),
         isSpace = token.trim() == "",
         isBracket = token == "(" || token == ")";
@@ -111,10 +111,11 @@ export class Parser {
         expectation == Expectation.UNDEF ||
         (expectation == Expectation.VARIABLE && !isNumber && !isBracket) ||
         (expectation == Expectation.OPERATOR && !isOperator) ||
+        (token == ")" && prevToken == "(") ||
         !(isNumber || isOperator || isBracket) ||
         (isNumber &&
           prevToken == "/" &&
-          (this.variables.get(token) == 0 || Number.parseFloat(token) == 0))
+          (this.variables.get(token) == 0 || Number(token) == 0))
       ) {
         tokenClassName += " error";
       }
@@ -143,16 +144,18 @@ export class Parser {
         } else if (
           isNumber &&
           prevToken == "/" &&
-          (this.variables.get(token) == 0 || Number.parseFloat(token) == 0)
+          (this.variables.get(token) == 0 || Number(token) == 0)
         ) {
           parseOutput.errorStr = `Division by zero at pos: ${currentPosition}`;
+          expectation = Expectation.UNDEF;
+        } else if (prevToken == "(" && token == ")") {
+          parseOutput.errorStr = `Empty brackets at position ${currentPosition}`;
           expectation = Expectation.UNDEF;
         }
       }
 
       if (expectation != Expectation.UNDEF) {
         if (token == "(" || isOperator) {
-          // console.log("operator encountered ", token, expectation);
           expectation = Expectation.VARIABLE;
         } else if (token == ")" || isNumber) {
           expectation = Expectation.OPERATOR;
@@ -161,19 +164,13 @@ export class Parser {
 
       formattedString = `${formattedString}<span class="wysiwygInternals ${tokenClassName}">${token}</span>`;
 
-      // if (isNumber) {
-      //   expectation = Expectation.OPERATOR;
-      // } else if (isOperator) {
-      //   expectation = Expectation.VARIABLE;
-      // } else if (isSpace) {
-      // } else {
-      //   expectation = Expectation.UNDEF;
-      // }
-
       currentPosition += token.length;
       prevToken = token;
-      // console.log(token, expectation);
     });
+
+    if (this.mathematicalOperators.has(prevToken)) {
+      parseOutput.errorStr = "Unexpected ending of formula.";
+    }
 
     const parser = new DOMParser();
     const doc = parser.parseFromString(formattedString, "text/html");
