@@ -163,14 +163,12 @@ export class FormulaEditor extends LitElement {
         ${FormulaEditorStyles}
         ${TextButtonStyles}
       </style>
-      <div>
-        <div
-          contenteditable
-          id="wysiwyg-editor"
-          spellcheck="false"
-          @input=${this.handleChange}
-        ></div>
-      </div>
+      <div
+        contenteditable
+        id="wysiwyg-editor"
+        spellcheck="false"
+        @input=${this.handleChange}
+      ></div>
       ${this._recommendations
         ? html`<div
             style="
