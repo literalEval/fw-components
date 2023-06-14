@@ -23,6 +23,17 @@
             justify-content: center;
             position: relative;
             font-family: 'Fira Code', sans-serif;
+
+
+            --fe-text-color: #080E00;
+            --fe-background-color: #FFFFFF;
+            --fe-caret-color: #000;
+            --fe-no-err-color: #098668;
+            --fe-text-color: #0070C1;
+            --fe-suggestion-color: #030303;
+            --fe-suggestion-background-color: #F3F3F3;
+            --fe-suggestion-focus-color: #FFFFFF;
+            --fe-suggestion-focus-background-color: #0060C0;
         }
     </style>
     <div style="padding-right: 8rem; font-size: 110%;">
@@ -39,6 +50,7 @@
         </p>
     </div>
     <formula-editor class="fe" style="zoom: 1.6; font-size: 80%;" minSuggestionLen="1"
+        style="height: 320px; width: 320px;"
         variables='[["sales_expense",2],["sales_in_quarter",200000000000000],["sales_cummulative",-0.5],["cummulative_sum",4],["new_users_in_quarter",420],["rate_of_exchange",0.2],["hot_coffee",0],["hot_chocolate",-8]]'>
     </formula-editor>
 </body>
