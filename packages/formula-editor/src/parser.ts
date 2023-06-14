@@ -111,6 +111,7 @@ export class Parser {
         expectation == Expectation.UNDEF ||
         (expectation == Expectation.VARIABLE && !isNumber && !isBracket) ||
         (expectation == Expectation.OPERATOR && !isOperator) ||
+        (token == ")" && prevToken == "(") ||
         !(isNumber || isOperator || isBracket) ||
         (isNumber &&
           prevToken == "/" &&
@@ -147,12 +148,14 @@ export class Parser {
         ) {
           parseOutput.errorStr = `Division by zero at pos: ${currentPosition}`;
           expectation = Expectation.UNDEF;
+        } else if (prevToken == "(" && token == ")") {
+          parseOutput.errorStr = `Empty brackets at position ${currentPosition}`;
+          expectation = Expectation.UNDEF;
         }
       }
 
       if (expectation != Expectation.UNDEF) {
         if (token == "(" || isOperator) {
-          console.log("operator encountered ", token, expectation);
           expectation = Expectation.VARIABLE;
         } else if (token == ")" || isNumber) {
           expectation = Expectation.OPERATOR;
@@ -161,18 +164,8 @@ export class Parser {
 
       formattedString = `${formattedString}<span class="wysiwygInternals ${tokenClassName}">${token}</span>`;
 
-      // if (isNumber) {
-      //   expectation = Expectation.OPERATOR;
-      // } else if (isOperator) {
-      //   expectation = Expectation.VARIABLE;
-      // } else if (isSpace) {
-      // } else {
-      //   expectation = Expectation.UNDEF;
-      // }
-
       currentPosition += token.length;
       prevToken = token;
-      console.log(token, expectation);
     });
 
     if (this.mathematicalOperators.has(prevToken)) {
