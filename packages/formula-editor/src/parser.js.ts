@@ -58,12 +58,12 @@ export class Parser {
           !Number.isNaN(Number(token)),
         isOperator = this.mathematicalOperators.has(token),
         isSpace = token.trim() == "",
-        isBracket = token == "(" || token == ")";
+        isBracket = token == "(" || token == ")",
+        hasCursor = false;
 
       if (isSpace) {
         formattedString = `${formattedString}${token}`;
         currentPosition += token.length;
-        console.log("isSpace", token.length);
         return;
       }
 
@@ -83,6 +83,7 @@ export class Parser {
           );
           token = recommendation;
           recommendation = null;
+          hasCursor = true;
         }
 
         parseOutput.recommendations =
@@ -162,7 +163,11 @@ export class Parser {
         }
       }
 
-      formattedString = `${formattedString}<span class="wysiwygInternals ${tokenClassName}">${token}</span>`;
+      if (hasCursor) {
+        formattedString = `${formattedString}${token}`;
+      } else {
+        formattedString = `${formattedString}<span class="wysiwygInternals ${tokenClassName}">${token}</span>`;
+      }
 
       currentPosition += token.length;
       prevToken = token;
