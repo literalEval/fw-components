@@ -74,7 +74,11 @@ export class FormulaEditor extends LitElement {
   minSuggestionLen: number = 2;
 
   handleChange(event: InputEvent) {
-    console.log(event);
+    // We don't want suggestions
+    if (event.inputType == 'insertCompositionText') {
+      return;
+    }
+
     event.preventDefault();
     // console.log(this.variables);
     this._content = (event.target as HTMLDivElement).innerText;
