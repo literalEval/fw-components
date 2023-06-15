@@ -78,11 +78,19 @@ export class FormulaEditor extends LitElement {
 
   handleChange(event: InputEvent) {
     event.preventDefault();
-    this.lastInputType = event.inputType;
 
+    this.lastInputType = event.inputType;
     this._content = (event.target as HTMLDivElement).innerText;
     this.parseInput();
+
     (event.target as HTMLDivElement).focus();
+  }
+
+  handleTab(event: KeyboardEvent) {
+    if (event.code == "Tab" && this._recommendations?.length == 1) {
+      event.preventDefault();
+      this.parseInput(this._recommendations[0]);
+    }
   }
 
   onClickRecommendation(recommendation: string) {
@@ -177,6 +185,7 @@ export class FormulaEditor extends LitElement {
         spellcheck="false"
         autocomplete="off"
         @input=${this.handleChange}
+        @keydown=${this.handleTab}
       ></div>
       ${this._recommendations
         ? html`<div
