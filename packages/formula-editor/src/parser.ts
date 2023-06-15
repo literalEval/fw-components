@@ -273,7 +273,7 @@ export class Parser {
     return outputQueue;
   }
 
-  addParens(formula: string): string | null {
+  addParentheses(formula: string): string | null {
     const rpn = this.buildRPN(formula);
 
     if (!rpn) {

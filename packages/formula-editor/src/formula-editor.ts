@@ -107,8 +107,7 @@ export class FormulaEditor extends LitElement {
 
     this.currentCursorPosition = addRecommendation
       ? this.currentCursorPosition
-      : // : Cursor.getCurrentCursorPosition(editor);
-        Cursor.getCaret(editor);
+      : Cursor.getCaret(editor);
 
     const parseOutput = this._parser.parseInput(
       this._content,
@@ -121,7 +120,7 @@ export class FormulaEditor extends LitElement {
     this._errorStr = parseOutput.errorStr;
 
     // Don't modify the text stream manually if the text is being composed,
-    // unless the user manually choses to do so by choosing a suggestion.
+    // unless the user manually chooses to do so by selecting a suggestion.
     if (this.lastInputType != "insertCompositionText" || addRecommendation) {
       editor.innerHTML = parseOutput.formattedString!;
     }
@@ -133,7 +132,6 @@ export class FormulaEditor extends LitElement {
       this.currentCursorPosition = parseOutput.newCursorPosition;
     }
 
-    // Cursor.setCurrentCursorPosition(this.currentCursorPosition!, editor);
     Cursor.setCaret(this.currentCursorPosition!, editor);
     editor?.focus();
 
@@ -143,12 +141,12 @@ export class FormulaEditor extends LitElement {
 
   requestCalculate() {
     if (this._parser.parseInput(this._content).errorStr) {
-      // return;
+      return;
     }
 
     const calculatedResult = this._parser.calculate(this._content);
 
-    this._content = this._parser.addParens(this._content) ?? this._content;
+    this._content = this._parser.addParentheses(this._content) ?? this._content;
     this.parseInput();
 
     this._calculatedResult = calculatedResult ?? NaN;
@@ -162,7 +160,7 @@ export class FormulaEditor extends LitElement {
   }
 
   requestFormat() {
-    this._content = this._parser.addParens(this._content) ?? this._content;
+    this._content = this._parser.addParentheses(this._content) ?? this._content;
     this.parseInput();
     this._recommendations = null;
     this.requestUpdate();
