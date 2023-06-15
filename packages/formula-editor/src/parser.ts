@@ -109,7 +109,7 @@ export class Parser {
       }
 
       if (
-        expectation == Expectation.UNDEF ||
+        expectation == Expectation.UNDEFINED ||
         (expectation == Expectation.VARIABLE &&
           !isNumber &&
           !isBracket &&
@@ -130,7 +130,7 @@ export class Parser {
       if (!parseOutput.errorStr) {
         if (bracketCount < 0) {
           parseOutput.errorStr = `Unexpected ')' at pos: ${currentPosition}`;
-          expectation = Expectation.UNDEF;
+          expectation = Expectation.UNDEFINED;
         } else if (
           expectation == Expectation.VARIABLE &&
           !isNumber &&
@@ -141,31 +141,31 @@ export class Parser {
           )
         ) {
           parseOutput.errorStr = `Expected variable/number at pos: ${currentPosition}`;
-          expectation = Expectation.UNDEF;
+          expectation = Expectation.UNDEFINED;
         } else if (
           expectation == Expectation.OPERATOR &&
           !isOperator &&
           token != ")"
         ) {
           parseOutput.errorStr = `Expected mathematical operator at pos: ${currentPosition}`;
-          expectation = Expectation.UNDEF;
+          expectation = Expectation.UNDEFINED;
         } else if (!(isNumber || isOperator || isBracket)) {
           parseOutput.errorStr = `Unknown word at pos: ${currentPosition}`;
-          expectation = Expectation.UNDEF;
+          expectation = Expectation.UNDEFINED;
         } else if (
           isNumber &&
           previousToken == "/" &&
           (this.variables.get(token) == 0 || Number(token) == 0)
         ) {
           parseOutput.errorStr = `Division by zero at pos: ${currentPosition}`;
-          expectation = Expectation.UNDEF;
+          expectation = Expectation.UNDEFINED;
         } else if (previousToken == "(" && token == ")") {
-          parseOutput.errorStr = `Empty brackets at position ${currentPosition}`;
-          expectation = Expectation.UNDEF;
+          parseOutput.errorStr = `isEmpty brackets at position ${currentPosition}`;
+          expectation = Expectation.UNDEFINED;
         }
       }
 
-      if (expectation != Expectation.UNDEF) {
+      if (expectation != Expectation.UNDEFINED) {
         if (token == "(" || isOperator) {
           expectation = Expectation.VARIABLE;
         } else if (token == ")" || isNumber) {
@@ -193,7 +193,7 @@ export class Parser {
     parseOutput.formattedContent = doc.querySelector("body")!;
     parseOutput.formattedString = formattedString;
 
-    if (!parentheses.empty()) {
+    if (!parentheses.isEmpty()) {
       parseOutput.errorStr = `Unclosed '(' at position: ${parentheses.top()}`;
     }
 
@@ -282,7 +282,7 @@ export class Parser {
 
     let stringRPN = "";
 
-    while (!rpn.empty()) {
+    while (!rpn.isEmpty()) {
       stringRPN += rpn.dequeue() + " ";
     }
 
@@ -336,7 +336,7 @@ export class Parser {
       } else throw `${symbol} is not a recognized symbol`;
     });
 
-    if (!resultStack.empty()) {
+    if (!resultStack.isEmpty()) {
       return resultStack.pop()!;
     } else throw `${stringRPN} is not a correct RPN`;
   }
@@ -350,7 +350,7 @@ export class Parser {
 
     let calcStack = new Stack<Big>();
 
-    while (!rpn.empty()) {
+    while (!rpn.isEmpty()) {
       const frontItem = rpn.dequeue()!;
 
       if (!this.mathematicalOperators.has(frontItem)) {
@@ -383,7 +383,7 @@ export class Parser {
 
             // Big.js doesn't support exponentiating a Big to a Big, which
             // is obious due to performance overheads. Use this case with case.
-            
+
             case "^":
               calcStack.push(Big(numA).pow(Big(numB).toNumber()));
           }
