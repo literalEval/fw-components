@@ -13,7 +13,7 @@ export class Stack<Type> {
     return this._inner.at(-1);
   }
 
-  empty(): boolean {
+  isEmpty(): boolean {
     return this._inner.length == 0;
   }
 
@@ -46,7 +46,7 @@ export class Queue<Type> {
     return this._inner[this._head];
   }
 
-  empty(): boolean {
+  isEmpty(): boolean {
     return this._head == this._tail;
   }
 
@@ -58,5 +58,5 @@ export class Queue<Type> {
 export enum Expectation {
   VARIABLE,
   OPERATOR,
-  UNDEF,
+  UNDEFINED,
 }

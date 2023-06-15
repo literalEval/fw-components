@@ -1,11 +1,10 @@
 export class Recommender {
   private _trie: TrieNode;
-  private _minSuggestionLen: number;
+  private _mininumSuggestionLength: number;
 
   constructor(variables: Map<string, number>, minSuggestionLen: number) {
-    this._minSuggestionLen = minSuggestionLen > 0 ? minSuggestionLen : 1;
+    this._mininumSuggestionLength = minSuggestionLen > 0 ? minSuggestionLen : 1;
     this._trie = new TrieNode();
-    this._trie.insertAll();
 
     for (let variable of variables) {
       this.insert(variable[0]);
@@ -35,7 +34,7 @@ export class Recommender {
   }
 
   getRecommendation(word: string): string[] | null {
-    if (word.length < this._minSuggestionLen) {
+    if (word.length < this._mininumSuggestionLength) {
       return null;
     }
 
@@ -52,7 +51,7 @@ export class Recommender {
       return null;
     }
 
-    this._traverseAndGet(recommendations, currentNode, word, currentPosition);
+    this._traverseAndGet(recommendations, currentNode, word);
 
     if (
       recommendations.length == 0 ||
@@ -68,20 +67,11 @@ export class Recommender {
     recommendations: string[],
     node: TrieNode,
     word: string,
-    position: number,
-    currentStr: string = ""
+    currentString: string = ""
   ) {
-    // if (currentStr != "") {
-    //   recommendations.push(word + currentStr);
-    // }
-
-    // if (node.children.size == 0) {
-    //   return;
-    // }
-
     for (let child of node.children) {
       if (child[0] == "\0") {
-        recommendations.push(word + currentStr);
+        recommendations.push(word + currentString);
         // return;
       }
 
@@ -89,8 +79,7 @@ export class Recommender {
         recommendations,
         child[1],
         word,
-        position,
-        currentStr + child[0]
+        currentString + child[0]
       );
     }
   }
@@ -104,17 +93,6 @@ class TrieNode {
   private _children: Map<string, TrieNode>;
   get children() {
     return this._children;
-  }
-
-  insertAll() {
-    const LOWERCASE_ASCII_BEGIN = 97;
-
-    for (let char = 0; char < 26; char++) {
-      this._children.set(
-        String.fromCharCode(char + LOWERCASE_ASCII_BEGIN),
-        new TrieNode()
-      );
-    }
   }
 
   getChild(char: string) {
