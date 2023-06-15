@@ -40,7 +40,7 @@ export class Parser {
       expectation = Expectation.VARIABLE,
       bracketCount = 0,
       currentPosition = 0,
-      prevToken = "",
+      previousToken = "",
       parseOutput: ParseOutput = {
         recommendations: null,
         formattedContent: null,
@@ -110,12 +110,18 @@ export class Parser {
 
       if (
         expectation == Expectation.UNDEF ||
-        (expectation == Expectation.VARIABLE && !isNumber && !isBracket) ||
+        (expectation == Expectation.VARIABLE &&
+          !isNumber &&
+          !isBracket &&
+          !(
+            (token == "-" || token == "+") &&
+            this.mathematicalOperators.has(previousToken)
+          )) ||
         (expectation == Expectation.OPERATOR && !isOperator) ||
-        (token == ")" && prevToken == "(") ||
+        (token == ")" && previousToken == "(") ||
         !(isNumber || isOperator || isBracket) ||
         (isNumber &&
-          prevToken == "/" &&
+          previousToken == "/" &&
           (this.variables.get(token) == 0 || Number(token) == 0))
       ) {
         tokenClassName += " error";
@@ -128,7 +134,11 @@ export class Parser {
         } else if (
           expectation == Expectation.VARIABLE &&
           !isNumber &&
-          !isBracket
+          !isBracket &&
+          !(
+            (token == "-" || token == "+") &&
+            this.mathematicalOperators.has(previousToken)
+          )
         ) {
           parseOutput.errorStr = `Expected variable/number at pos: ${currentPosition}`;
           expectation = Expectation.UNDEF;
@@ -144,12 +154,12 @@ export class Parser {
           expectation = Expectation.UNDEF;
         } else if (
           isNumber &&
-          prevToken == "/" &&
+          previousToken == "/" &&
           (this.variables.get(token) == 0 || Number(token) == 0)
         ) {
           parseOutput.errorStr = `Division by zero at pos: ${currentPosition}`;
           expectation = Expectation.UNDEF;
-        } else if (prevToken == "(" && token == ")") {
+        } else if (previousToken == "(" && token == ")") {
           parseOutput.errorStr = `Empty brackets at position ${currentPosition}`;
           expectation = Expectation.UNDEF;
         }
@@ -170,10 +180,10 @@ export class Parser {
       }
 
       currentPosition += token.length;
-      prevToken = token;
+      previousToken = token;
     });
 
-    if (this.mathematicalOperators.has(prevToken)) {
+    if (this.mathematicalOperators.has(previousToken)) {
       parseOutput.errorStr = "Unexpected ending of formula.";
     }
 
@@ -195,17 +205,40 @@ export class Parser {
       return null;
     }
 
-    let tokens = formula
+    const tokens = formula
       .split(/([-+(),*/:?\s])/g)
       .filter((el: string) => !/\s+/.test(el) && el !== "");
-    // this.calculatedResult = this._parser.calculate(this.content)!;
 
-    // Implementing the Shunting Yard Algorithm (EW Dijkstra)
+    // Handling the special case of unary `-` and `+`.
+
+    let previousToken = "";
+    let carriedToken: string | null = null;
+    const parsedTokens: string[] = [];
+
+    for (const token of tokens) {
+      if (
+        (token == "+" || token == "-") &&
+        this.mathematicalOperators.has(previousToken)
+      ) {
+        carriedToken = token;
+      } else if (carriedToken) {
+        parsedTokens.push(carriedToken + token);
+        carriedToken = null;
+      } else {
+        parsedTokens.push(token);
+      }
+
+      previousToken = token;
+    }
+
+    /**
+     * Shunting Yard Algorithm (EW Dijkstra)
+     */
 
     const operatorStack = new Stack<string>();
     const outputQueue = new Queue<string>();
 
-    for (let token of tokens) {
+    for (const token of parsedTokens) {
       if (token == "(") {
         operatorStack.push("(");
       } else if (token == ")") {
@@ -347,7 +380,7 @@ export class Parser {
             case "/":
               calcStack.push(Big(numA).div(Big(numB)));
           }
-        } catch (err) {
+        } catch (err: unknown) {
           return undefined;
         }
       }

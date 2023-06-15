@@ -135,7 +135,7 @@ export class FormulaEditor extends LitElement {
 
   requestCalculate() {
     if (this._parser.parseInput(this._content).errorStr) {
-      return;
+      // return;
     }
 
     const calculatedResult = this._parser.calculate(this._content);
