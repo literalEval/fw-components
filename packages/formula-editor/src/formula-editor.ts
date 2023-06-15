@@ -186,7 +186,7 @@ export class FormulaEditor extends LitElement {
         @keydown=${this.handleTab}
       ></div>
       ${this._recommendations
-        ? html`<div
+        ? html` <suggestion-menu
             style="
               position: absolute; 
               left: ${this.currentCursorRect?.left + "px"}; 
@@ -194,13 +194,9 @@ export class FormulaEditor extends LitElement {
             window.scrollY +
             "px"};
             "
-          >
-            <suggestion-menu
-              .recommendations=${this._recommendations}
-              .onClickRecommendation=${(e: any) =>
-                this.onClickRecommendation(e)}
-            ></suggestion-menu>
-          </div>`
+            .recommendations=${this._recommendations}
+            .onClickRecommendation=${(e: any) => this.onClickRecommendation(e)}
+          ></suggestion-menu>`
         : html``}
       <div id="wysiwyg-err" class="${this._errorStr ?? "wysiwyg-no-err"}">
         ${this._errorStr ?? "No Errors"}
