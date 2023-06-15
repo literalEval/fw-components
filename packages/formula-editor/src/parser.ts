@@ -20,7 +20,7 @@ export class Parser {
   private _recommender: Recommender;
 
   variables: Map<string, number>;
-  mathematicalOperators: Set<string> = new Set(["+", "-", "*", "/"]);
+  mathematicalOperators: Set<string> = new Set(["^", "+", "-", "*", "/"]);
   operatorPrecedence: { [key: string]: number } = {
     "^": 3,
     "/": 2,
@@ -379,6 +379,13 @@ export class Parser {
               break;
             case "/":
               calcStack.push(Big(numA).div(Big(numB)));
+              break;
+
+            // Big.js doesn't support exponentiating a Big to a Big, which
+            // is obious due to performance overheads. Use this case with case.
+            
+            case "^":
+              calcStack.push(Big(numA).pow(Big(numB).toNumber()));
           }
         } catch (err: unknown) {
           return undefined;
