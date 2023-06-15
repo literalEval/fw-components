@@ -382,7 +382,7 @@ export class Parser {
               break;
 
             // Big.js doesn't support exponentiating a Big to a Big, which
-            // is obious due to performance overheads. Use this case with case.
+            // is obious due to performance overheads. Use this case with care.
 
             case "^":
               calcStack.push(Big(numA).pow(Big(numB).toNumber()));
