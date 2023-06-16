@@ -88,9 +88,7 @@ export class Parser {
 
         parseOutput.recommendations =
           this._recommender.getRecommendation(token);
-        // console.log(parseOutput.recommendations);
-      } else {
-        // parseOutput.recommendations = null;
+        console.log(parseOutput.recommendations);
       }
 
       let tokenClassName = "";
@@ -105,7 +103,6 @@ export class Parser {
         tokenClassName += " bracket";
       } else if (isOperator) {
         tokenClassName += " operator";
-      } else {
       }
 
       if (
@@ -134,7 +131,7 @@ export class Parser {
         } else if (
           expectation == Expectation.VARIABLE &&
           !isNumber &&
-          !isBracket &&
+          token != "(" &&
           !(
             (token == "-" || token == "+") &&
             this.mathematicalOperators.has(previousToken)
@@ -160,7 +157,7 @@ export class Parser {
           parseOutput.errorStr = `Division by zero at pos: ${currentPosition}`;
           expectation = Expectation.UNDEFINED;
         } else if (previousToken == "(" && token == ")") {
-          parseOutput.errorStr = `isEmpty brackets at position ${currentPosition}`;
+          parseOutput.errorStr = `Empty brackets at position ${currentPosition}`;
           expectation = Expectation.UNDEFINED;
         }
       }
@@ -273,29 +270,24 @@ export class Parser {
     return outputQueue;
   }
 
-  addParens(formula: string): string | null {
+  addParentheses(formula: string): string | null {
     const rpn = this.buildRPN(formula);
 
     if (!rpn) {
       return null;
     }
 
-    let stringRPN = "";
+    const lexedRPN: string[] = [];
 
     while (!rpn.isEmpty()) {
-      stringRPN += rpn.dequeue() + " ";
+      lexedRPN.push(rpn.dequeue()!);
     }
-
-    let lexedRPN = stringRPN
-      // .replace(/\^/g, "**")
-      .split(/\s+/g)
-      .filter((el: string) => !/\s+/.test(el) && el !== "");
 
     let operatorStack = new Stack<string | null>();
     let resultStack = new Stack<string>();
 
     lexedRPN.forEach((symbol) => {
-      let stra, strb;
+      let parsedLeftExpression: string, parsedRightExpression: string;
 
       if (
         this.variables.has(symbol) ||
@@ -304,41 +296,47 @@ export class Parser {
         resultStack.push(symbol);
         operatorStack.push(null);
       } else if (Object.keys(this.operatorPrecedence).includes(symbol)) {
-        let [a, b, opa, opb] = [
-          resultStack.pop(),
-          resultStack.pop(),
+        let [rightExpression, leftExpression, operatorA, operatorB] = [
+          resultStack.pop()!,
+          resultStack.pop()!,
           operatorStack.pop()!,
           operatorStack.pop()!,
         ];
 
         if (
-          this.operatorPrecedence[opb] <= this.operatorPrecedence[symbol] ||
-          (this.operatorPrecedence[opb] === this.operatorPrecedence[symbol] &&
+          this.operatorPrecedence[operatorB] <=
+            this.operatorPrecedence[symbol] ||
+          (this.operatorPrecedence[operatorB] ===
+            this.operatorPrecedence[symbol] &&
             ["/", "-"].includes(symbol))
         ) {
-          strb = `(${b})`;
+          parsedLeftExpression = `(${leftExpression})`;
         } else {
-          strb = `${b}`;
+          parsedLeftExpression = leftExpression;
         }
 
         if (
-          this.operatorPrecedence[opa] <= this.operatorPrecedence[symbol] ||
-          (this.operatorPrecedence[opa] === this.operatorPrecedence[symbol] &&
+          this.operatorPrecedence[operatorA] <=
+            this.operatorPrecedence[symbol] ||
+          (this.operatorPrecedence[operatorA] ===
+            this.operatorPrecedence[symbol] &&
             ["/", "-"].includes(symbol))
         ) {
-          stra = `(${a})`;
+          parsedRightExpression = `(${rightExpression})`;
         } else {
-          stra = `${a}`;
+          parsedRightExpression = rightExpression;
         }
 
-        resultStack.push(`${strb} ${symbol} ${stra}`);
+        resultStack.push(
+          `${parsedLeftExpression} ${symbol} ${parsedRightExpression}`
+        );
         operatorStack.push(symbol);
       } else throw `${symbol} is not a recognized symbol`;
     });
 
     if (!resultStack.isEmpty()) {
       return resultStack.pop()!;
-    } else throw `${stringRPN} is not a correct RPN`;
+    } else throw `${lexedRPN} is not a correct RPN`;
   }
 
   calculate(formula: string): number | undefined {
@@ -382,7 +380,7 @@ export class Parser {
               break;
 
             // Big.js doesn't support exponentiating a Big to a Big, which
-            // is obious due to performance overheads. Use this case with case.
+            // is obious due to performance overheads. Use this case with care.
 
             case "^":
               calcStack.push(Big(numA).pow(Big(numB).toNumber()));
