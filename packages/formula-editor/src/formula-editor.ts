@@ -119,8 +119,14 @@ export class FormulaEditor extends LitElement {
     this._formattedContent = parseOutput.formattedContent;
     this._errorStr = parseOutput.errorStr;
 
-    // Don't modify the text stream manually if the text is being composed,
-    // unless the user manually chooses to do so by selecting a suggestion.
+    /**  
+     * Don't modify the text stream manually if the text is being composed,
+     * unless the user manually chooses to do so by selecting a suggestion.
+     * @see https://github.com/w3c/input-events/issues/86
+     * @see https://github.com/w3c/input-events/pull/122
+     * @see https://bugs.chromium.org/p/chromium/issues/detail?id=689541
+     * */
+
     if (this.lastInputType != "insertCompositionText" || addRecommendation) {
       editor.innerHTML = parseOutput.formattedString!;
     }

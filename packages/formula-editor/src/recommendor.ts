@@ -63,7 +63,7 @@ export class Recommender {
     return recommendations;
   }
 
-  _traverseAndGet(
+  private _traverseAndGet(
     recommendations: string[],
     node: TrieNode,
     word: string,
@@ -91,6 +91,7 @@ class TrieNode {
   }
 
   private _children: Map<string, TrieNode>;
+  
   get children() {
     return this._children;
   }

@@ -114,7 +114,7 @@ export class Parser {
             (token == "-" || token == "+") &&
             this.mathematicalOperators.has(previousToken)
           )) ||
-        (expectation == Expectation.OPERATOR && !isOperator) ||
+        (expectation == Expectation.OPERATOR && !(isOperator || token == ')')) ||
         (token == ")" && previousToken == "(") ||
         !(isNumber || isOperator || isBracket) ||
         (isNumber &&
