@@ -89,8 +89,6 @@ export class Parser {
         parseOutput.recommendations =
           this._recommender.getRecommendation(token);
         console.log(parseOutput.recommendations);
-      } else {
-        // parseOutput.recommendations = null;
       }
 
       let tokenClassName = "";
@@ -105,7 +103,6 @@ export class Parser {
         tokenClassName += " bracket";
       } else if (isOperator) {
         tokenClassName += " operator";
-      } else {
       }
 
       if (
@@ -134,7 +131,7 @@ export class Parser {
         } else if (
           expectation == Expectation.VARIABLE &&
           !isNumber &&
-          !isBracket &&
+          token != "(" &&
           !(
             (token == "-" || token == "+") &&
             this.mathematicalOperators.has(previousToken)
@@ -160,7 +157,7 @@ export class Parser {
           parseOutput.errorStr = `Division by zero at pos: ${currentPosition}`;
           expectation = Expectation.UNDEFINED;
         } else if (previousToken == "(" && token == ")") {
-          parseOutput.errorStr = `isEmpty brackets at position ${currentPosition}`;
+          parseOutput.errorStr = `Empty brackets at position ${currentPosition}`;
           expectation = Expectation.UNDEFINED;
         }
       }
@@ -307,8 +304,10 @@ export class Parser {
         ];
 
         if (
-          this.operatorPrecedence[operatorB] <= this.operatorPrecedence[symbol] ||
-          (this.operatorPrecedence[operatorB] === this.operatorPrecedence[symbol] &&
+          this.operatorPrecedence[operatorB] <=
+            this.operatorPrecedence[symbol] ||
+          (this.operatorPrecedence[operatorB] ===
+            this.operatorPrecedence[symbol] &&
             ["/", "-"].includes(symbol))
         ) {
           parsedLeftExpression = `(${leftExpression})`;
@@ -317,8 +316,10 @@ export class Parser {
         }
 
         if (
-          this.operatorPrecedence[operatorA] <= this.operatorPrecedence[symbol] ||
-          (this.operatorPrecedence[operatorA] === this.operatorPrecedence[symbol] &&
+          this.operatorPrecedence[operatorA] <=
+            this.operatorPrecedence[symbol] ||
+          (this.operatorPrecedence[operatorA] ===
+            this.operatorPrecedence[symbol] &&
             ["/", "-"].includes(symbol))
         ) {
           parsedRightExpression = `(${rightExpression})`;
@@ -326,7 +327,9 @@ export class Parser {
           parsedRightExpression = rightExpression;
         }
 
-        resultStack.push(`${parsedLeftExpression} ${symbol} ${parsedRightExpression}`);
+        resultStack.push(
+          `${parsedLeftExpression} ${symbol} ${parsedRightExpression}`
+        );
         operatorStack.push(symbol);
       } else throw `${symbol} is not a recognized symbol`;
     });
