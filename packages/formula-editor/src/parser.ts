@@ -34,7 +34,7 @@ export class Parser {
     prevCurPos: number | null = null,
     recommendation: string | null = null
   ): ParseOutput {
-    let tokens = formula.split(/([-+(),*/:?\s])/g),
+    let tokens = formula.split(/([-+(),*^/:?\s])/g),
       parentheses = new Stack<number>(),
       formattedString = ``,
       expectation = Expectation.VARIABLE,
@@ -203,7 +203,7 @@ export class Parser {
     }
 
     const tokens = formula
-      .split(/([-+(),*/:?\s])/g)
+      .split(/([-+(),*^/:?\s])/g)
       .filter((el: string) => !/\s+/.test(el) && el !== "");
 
     // Handling the special case of unary `-` and `+`.
