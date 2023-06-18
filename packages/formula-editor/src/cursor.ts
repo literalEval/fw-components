@@ -1,5 +1,11 @@
 export class Cursor {
-  static getCurrentCursorPosition(parentElement: any) {
+  /**
+   * The functions `getCurrentCursorPosition`, `setCurrentCursorPosition` and their
+   * helpers `_createRange` and `_isChildOf` are not used for caret manipulation,
+   * but are still in the code for future reference, if the functionality breaks
+   * somehow in some obsolete browser.
+   */
+  static getCurrentCursorPosition(parentElement: any): number {
     let selection = window.getSelection(),
       charCount = -1,
       node;
@@ -85,7 +91,7 @@ export class Cursor {
     return false;
   }
 
-  static getCaret = (element: any) => {
+  static getCaretPosition = (element: any) => {
     const range = window.getSelection()!.getRangeAt(0);
     const prefix = range.cloneRange();
     prefix.selectNodeContents(element);
@@ -93,7 +99,7 @@ export class Cursor {
     return prefix.toString().length;
   };
 
-  static setCaret = (pos: any, parent: any) => {
+  static setCaretPosition = (pos: any, parent: any) => {
     for (const node of parent.childNodes) {
       if (node.nodeType == Node.TEXT_NODE) {
         if (node.length >= pos) {
@@ -108,7 +114,7 @@ export class Cursor {
           pos = pos - node.length;
         }
       } else {
-        pos = this.setCaret(pos, node);
+        pos = this.setCaretPosition(pos, node);
         if (pos < 0) {
           return pos;
         }

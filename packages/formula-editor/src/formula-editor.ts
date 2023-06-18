@@ -41,7 +41,7 @@ export class FormulaEditor extends LitElement {
   _errorStr: string | null = null;
 
   @state()
-  _calculatedResult: number | null = null;
+  _calculatedResult: number | undefined = undefined;
 
   /**
    * If `parseInput` is called to add a recommendation, say by clicking,
@@ -101,25 +101,25 @@ export class FormulaEditor extends LitElement {
     this.currentCursorPosition = null;
   }
 
-  parseInput(addRecommendation: string | null = null) {
+  parseInput(recommendation: string | null = null) {
     let editor = document.getElementById("wysiwyg-editor");
     if (!editor) return;
 
-    this.currentCursorPosition = addRecommendation
+    this.currentCursorPosition = recommendation
       ? this.currentCursorPosition
-      : Cursor.getCaret(editor);
+      : Cursor.getCaretPosition(editor);
 
     const parseOutput = this._parser.parseInput(
       this._content,
       this.currentCursorPosition,
-      addRecommendation
+      recommendation
     );
 
     this._recommendations = parseOutput.recommendations;
     this._formattedContent = parseOutput.formattedContent;
-    this._errorStr = parseOutput.errorStr;
+    this._errorStr = parseOutput.errorString;
 
-    /**  
+    /**
      * Don't modify the text stream manually if the text is being composed,
      * unless the user manually chooses to do so by selecting a suggestion.
      * @see https://github.com/w3c/input-events/issues/86
@@ -127,18 +127,18 @@ export class FormulaEditor extends LitElement {
      * @see https://bugs.chromium.org/p/chromium/issues/detail?id=689541
      * */
 
-    if (this.lastInputType != "insertCompositionText" || addRecommendation) {
+    if (this.lastInputType != "insertCompositionText" || recommendation) {
       editor.innerHTML = parseOutput.formattedString!;
     }
 
     this._content = (editor as HTMLDivElement).innerText;
 
-    if (addRecommendation) {
+    if (recommendation) {
       this._recommendations = null;
       this.currentCursorPosition = parseOutput.newCursorPosition;
     }
 
-    Cursor.setCaret(this.currentCursorPosition!, editor);
+    Cursor.setCaretPosition(this.currentCursorPosition!, editor);
     editor?.focus();
 
     this.currentCursorRect = Cursor.getCursorRect();
@@ -146,7 +146,7 @@ export class FormulaEditor extends LitElement {
   }
 
   requestCalculate() {
-    if (this._parser.parseInput(this._content).errorStr) {
+    if (this._parser.parseInput(this._content).errorString) {
       return;
     }
 
@@ -155,11 +155,8 @@ export class FormulaEditor extends LitElement {
     this._content = this._parser.addParentheses(this._content) ?? this._content;
     this.parseInput();
 
-    this._calculatedResult = calculatedResult ?? NaN;
-    this._errorStr =
-      calculatedResult == undefined
-        ? "Division by zero encountered"
-        : this._errorStr;
+    this._calculatedResult = calculatedResult.result;
+    this._errorStr = calculatedResult.errorString;
 
     this._recommendations = null;
     this.requestUpdate();
@@ -205,7 +202,7 @@ export class FormulaEditor extends LitElement {
           ></suggestion-menu>`
         : html``}
       <div id="wysiwyg-err" class="${this._errorStr ?? "wysiwyg-no-err"}">
-        ${this._errorStr ?? "No Errors"}
+        ${this._errorStr ?? html`&nbsp;`}
       </div>
       <button class="primary-text-button" @click=${this.requestCalculate}>
         Calculate

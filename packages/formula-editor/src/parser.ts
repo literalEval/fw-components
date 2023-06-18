@@ -2,12 +2,17 @@ import Big from "big.js";
 import { Expectation, Queue, Stack } from "./helpers.js";
 import { Recommender } from "./recommendor.js";
 
-export interface ParseOutput {
+export interface ParseResult {
   recommendations: string[] | null;
   formattedContent: HTMLBodyElement | null;
   formattedString: string | null;
   newCursorPosition: number;
-  errorStr: string | null;
+  errorString: string | null;
+}
+
+export interface CalculateResult {
+  result: number | undefined;
+  errorString: string | null;
 }
 
 export class Parser {
@@ -33,48 +38,75 @@ export class Parser {
     formula: string,
     prevCurPos: number | null = null,
     recommendation: string | null = null
-  ): ParseOutput {
-    let tokens = formula.split(/([-+(),*^/:?\s])/g),
-      parentheses = new Stack<number>(),
-      formattedString = ``,
-      expectation = Expectation.VARIABLE,
-      bracketCount = 0,
-      currentPosition = 0,
-      previousToken = "",
-      parseOutput: ParseOutput = {
-        recommendations: null,
-        formattedContent: null,
-        formattedString: null,
-        newCursorPosition: prevCurPos ?? -1,
-        errorStr: null,
-      };
+  ): ParseResult {
+    let tokens = formula.split(/([-+(),*^/:?\s])/g);
+
+    // Stores the positions of opening parentheses. This allows us to
+    // show "Unclosed parenthesis error" for positions which are far behind
+    // our current token
+    let parentheses = new Stack<number>();
+
+    // The HTML formatted string which we eventually show on the view.
+    let formattedString = ``;
+
+    // The expectation that we have for the current token.
+    let expectation = Expectation.VARIABLE;
+
+    // Position of the current token in the formula string.
+    let currentPosition = 0;
+
+    // Previous 'token' (not a space or a new line) that we just encountered.
+    let previousToken = "";
+
+    // The object that we return as the output of the parsing result.
+    let parseOutput: ParseResult = {
+      recommendations: null,
+      formattedContent: null,
+      formattedString: null,
+      newCursorPosition: prevCurPos ?? -1,
+      errorString: null,
+    };
 
     console.log(tokens);
 
     tokens.forEach((token) => {
-      let isNumber =
-          this.variables.has(token) ||
-          (recommendation && this.variables.has(recommendation)) ||
-          !Number.isNaN(Number(token)),
+      // It is a number is either it's in the defined variables, or
+      // it's a valid number literal.
+      let isNumber = this.variables.has(token) || !Number.isNaN(Number(token)),
         isOperator = this.mathematicalOperators.has(token),
         isSpace = token.trim() == "",
-        isBracket = token == "(" || token == ")",
-        hasCursor = false;
+        isBracket = token == "(" || token == ")";
 
+      // We don't really want anything for the spaces, other than simply
+      // adding them back to the view.
       if (isSpace) {
         formattedString = `${formattedString}${token}`;
         currentPosition += token.length;
         return;
       }
 
+      // If the cursor position is 'inside` the current token:
+      //
+      // 1. If we've got a recommendation to add, simply replace the
+      //    word with the recommendation.
+      // 2. Ask the recommendor to fetch recommendations for this specific
+      //    token/word.
+
       if (
         currentPosition <= prevCurPos! &&
-        currentPosition + token.length >= prevCurPos! &&
-        !parseOutput.recommendations
+        currentPosition + token.length >= prevCurPos!
       ) {
         // If a recommendation was provided, replace the correspoding
         // word with it and move the cursor forward, accordingly.
         if (recommendation) {
+          // Since we are sure that the recommendation will always correspond
+          // to a variable.
+          isNumber = true;
+
+          // If the new cursor length somehow becomes larger than the
+          // length of the formula string, setting the caret to that
+          // length will move the caret to the start. Although this overflow
+          // won't happen, but still, this check prevents that.
           parseOutput.newCursorPosition = Math.min(
             parseOutput.newCursorPosition +
               recommendation.length -
@@ -83,9 +115,9 @@ export class Parser {
           );
           token = recommendation;
           recommendation = null;
-          hasCursor = true;
         }
 
+        // Fetch recommendations nonetheless.
         parseOutput.recommendations =
           this._recommender.getRecommendation(token);
         console.log(parseOutput.recommendations);
@@ -93,42 +125,20 @@ export class Parser {
 
       let tokenClassName = "";
 
-      if (token == "(") {
-        bracketCount++;
-        parentheses.push(currentPosition);
-        tokenClassName += " bracket";
-      } else if (token == ")") {
-        parentheses.pop();
-        bracketCount--;
-        tokenClassName += " bracket";
-      } else if (isOperator) {
-        tokenClassName += " operator";
-      }
-
-      if (
-        expectation == Expectation.UNDEFINED ||
-        (expectation == Expectation.VARIABLE &&
-          !isNumber &&
-          !isBracket &&
-          !(
-            (token == "-" || token == "+") &&
-            this.mathematicalOperators.has(previousToken)
-          )) ||
-        (expectation == Expectation.OPERATOR && !(isOperator || token == ')')) ||
-        (token == ")" && previousToken == "(") ||
-        !(isNumber || isOperator || isBracket) ||
-        (isNumber &&
-          previousToken == "/" &&
-          (this.variables.get(token) == 0 || Number(token) == 0))
-      ) {
-        tokenClassName += " error";
-      }
-
-      if (!parseOutput.errorStr) {
-        if (bracketCount < 0) {
-          parseOutput.errorStr = `Unexpected ')' at pos: ${currentPosition}`;
+      // Don't check for errors if an error has already been encountered.
+      if (expectation != Expectation.UNDEFINED) {
+        // Unnecessary closing parenthesis
+        if (parentheses.isEmpty() && token == ")") {
+          parseOutput.errorString = `Unexpected ')' at pos: ${currentPosition}`;
+          tokenClassName += " error";
           expectation = Expectation.UNDEFINED;
-        } else if (
+        }
+
+        // Operator or ) after an operator. Eg: `23 / *` or `23 / )`
+        // Unary `+` and `-` are not an error as they might represent
+        // a positive or negative number respectively. But they will still
+        // be an error if the formula ends with them.
+        else if (
           expectation == Expectation.VARIABLE &&
           !isNumber &&
           token != "(" &&
@@ -137,31 +147,54 @@ export class Parser {
             this.mathematicalOperators.has(previousToken)
           )
         ) {
-          parseOutput.errorStr = `Expected variable/number at pos: ${currentPosition}`;
+          parseOutput.errorString = `Expected variable/number at pos: ${currentPosition}`;
+          tokenClassName += " error";
           expectation = Expectation.UNDEFINED;
-        } else if (
+        }
+
+        // Number/Variable after the same. Eg: `a a` or `420 420`.
+        // Having a ) is fine. Eg: `23)` might be representing `(23 + 23)
+        else if (
           expectation == Expectation.OPERATOR &&
           !isOperator &&
           token != ")"
         ) {
-          parseOutput.errorStr = `Expected mathematical operator at pos: ${currentPosition}`;
+          parseOutput.errorString = `Expected mathematical operator at pos: ${currentPosition}`;
+          tokenClassName += " error";
           expectation = Expectation.UNDEFINED;
-        } else if (!(isNumber || isOperator || isBracket)) {
-          parseOutput.errorStr = `Unknown word at pos: ${currentPosition}`;
+        }
+
+        // Unknown symbol/variable/word
+        else if (!(isNumber || isOperator || isBracket)) {
+          parseOutput.errorString = `Unknown word at pos: ${currentPosition}`;
+          tokenClassName += " error";
           expectation = Expectation.UNDEFINED;
-        } else if (
+        }
+
+        // The case of division by zero. Since we can't know if an expression evaluates
+        // to zero or not, that case can only be handled during calculation.
+        else if (
           isNumber &&
           previousToken == "/" &&
           (this.variables.get(token) == 0 || Number(token) == 0)
         ) {
-          parseOutput.errorStr = `Division by zero at pos: ${currentPosition}`;
+          parseOutput.errorString = `Division by zero at pos: ${currentPosition}`;
+          tokenClassName += " error";
           expectation = Expectation.UNDEFINED;
-        } else if (previousToken == "(" && token == ")") {
-          parseOutput.errorStr = `Empty brackets at position ${currentPosition}`;
+        }
+
+        // Empty brackets. Default might be takn as 0, but that will only make sense
+        // in addition and subtraction and not in other operators, so making this
+        // case an error makes more sense.
+        else if (previousToken == "(" && token == ")") {
+          parseOutput.errorString = `Empty brackets at position ${currentPosition}`;
+          tokenClassName += " error";
           expectation = Expectation.UNDEFINED;
         }
       }
 
+      // Setting the expectation for the next token, if we have not encountered an
+      // error already.
       if (expectation != Expectation.UNDEFINED) {
         if (token == "(" || isOperator) {
           expectation = Expectation.VARIABLE;
@@ -170,18 +203,31 @@ export class Parser {
         }
       }
 
-      if (hasCursor) {
-        formattedString = `${formattedString}${token}`;
-      } else {
-        formattedString = `${formattedString}<span class="wysiwygInternals ${tokenClassName}">${token}</span>`;
+      if (token == "(") {
+        parentheses.push(currentPosition);
+        tokenClassName += " bracket";
+      } else if (token == ")") {
+        parentheses.pop();
+        tokenClassName += " bracket";
+      } else if (isOperator) {
+        tokenClassName += " operator";
+      } else if (expectation == Expectation.UNDEFINED) {
+        tokenClassName += " error";
       }
+
+      // Since not using ShadowDOM, having these specific class names will prevent
+      // name collision.
+      formattedString = `${formattedString}<span class="wysiwygInternals ${tokenClassName}">${token}</span>`;
 
       currentPosition += token.length;
       previousToken = token;
     });
 
+    // If the formula ends with a mathematical operator, or has unclosed `(`
     if (this.mathematicalOperators.has(previousToken)) {
-      parseOutput.errorStr = "Unexpected ending of formula.";
+      parseOutput.errorString = "Unexpected ending of formula.";
+    } else if (!parentheses.isEmpty()) {
+      parseOutput.errorString = `Unclosed '(' at position: ${parentheses.top()}`;
     }
 
     const parser = new DOMParser();
@@ -190,15 +236,11 @@ export class Parser {
     parseOutput.formattedContent = doc.querySelector("body")!;
     parseOutput.formattedString = formattedString;
 
-    if (!parentheses.isEmpty()) {
-      parseOutput.errorStr = `Unclosed '(' at position: ${parentheses.top()}`;
-    }
-
     return parseOutput;
   }
 
   buildRPN(formula: string): Queue<string> | null {
-    if (this.parseInput(formula).errorStr) {
+    if (this.parseInput(formula).errorString) {
       return null;
     }
 
@@ -263,10 +305,6 @@ export class Parser {
       outputQueue.enqueue(operatorStack.pop()!);
     }
 
-    (() => {
-      // outputQueue?.print();
-    })();
-
     return outputQueue;
   }
 
@@ -283,11 +321,19 @@ export class Parser {
       lexedRPN.push(rpn.dequeue()!);
     }
 
+    // Stores the operators that we encounter in the RPN
     let operatorStack = new Stack<string | null>();
+
+    // Stores the `results`, which are essentially individual groups
+    // of tokens showing a meaningful value.
     let resultStack = new Stack<string>();
 
     lexedRPN.forEach((symbol) => {
       let parsedLeftExpression: string, parsedRightExpression: string;
+
+      // If we encounter a number or a variable in the RPN, it is itself
+      // a calculated entity (say a result in itself), needs no modification
+      // and can be directly put into the result stack.
 
       if (
         this.variables.has(symbol) ||
@@ -295,13 +341,22 @@ export class Parser {
       ) {
         resultStack.push(symbol);
         operatorStack.push(null);
-      } else if (Object.keys(this.operatorPrecedence).includes(symbol)) {
+      }
+
+      // If it is not a number/variable then it is an operator. We will
+      // take out previos operators from the `operatorStack`, compare
+      // them with the current one, adds brackets accordingly to the `results`
+      // around it, and then finally add it to the `operatorStack` for
+      // future reference.
+      else if (Object.keys(this.operatorPrecedence).includes(symbol)) {
         let [rightExpression, leftExpression, operatorA, operatorB] = [
           resultStack.pop()!,
           resultStack.pop()!,
           operatorStack.pop()!,
           operatorStack.pop()!,
         ];
+
+        // The conditions that govern when to show a parenthesis.
 
         if (
           this.operatorPrecedence[operatorB] <=
@@ -327,9 +382,12 @@ export class Parser {
           parsedRightExpression = rightExpression;
         }
 
+        // The bracket included expression is now itself a `result`
+
         resultStack.push(
           `${parsedLeftExpression} ${symbol} ${parsedRightExpression}`
         );
+
         operatorStack.push(symbol);
       } else throw `${symbol} is not a recognized symbol`;
     });
@@ -339,11 +397,15 @@ export class Parser {
     } else throw `${lexedRPN} is not a correct RPN`;
   }
 
-  calculate(formula: string): number | undefined {
+  calculate(formula: string): CalculateResult {
     let rpn = this.buildRPN(formula);
+    let calculationResult: CalculateResult = {
+      result: undefined,
+      errorString: null,
+    };
 
     if (!rpn) {
-      return undefined;
+      return calculationResult;
     }
 
     let calcStack = new Stack<Big>();
@@ -376,6 +438,11 @@ export class Parser {
               calcStack.push(Big(numA).mul(Big(numB)));
               break;
             case "/":
+              if (Big(numB).toNumber() == 0) {
+                calculationResult.errorString = "Division by zero encountered";
+                return calculationResult;
+              }
+
               calcStack.push(Big(numA).div(Big(numB)));
               break;
 
@@ -385,12 +452,14 @@ export class Parser {
             case "^":
               calcStack.push(Big(numA).pow(Big(numB).toNumber()));
           }
-        } catch (err: unknown) {
-          return undefined;
+        } catch (error: any) {
+          calculationResult.errorString = error;
+          return calculationResult;
         }
       }
     }
 
-    return calcStack.top()?.toNumber();
+    calculationResult.result = calcStack.top()?.toNumber();
+    return calculationResult;
   }
 }
