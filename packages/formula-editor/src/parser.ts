@@ -344,7 +344,7 @@ export class Parser {
       }
 
       // If it is not a number/variable then it is an operator. We will
-      // take out previos operators from the `operatorStack`, compare
+      // take out previous operators from the `operatorStack`, compare
       // them with the current one, adds brackets accordingly to the `results`
       // around it, and then finally add it to the `operatorStack` for
       // future reference.
@@ -447,7 +447,7 @@ export class Parser {
               break;
 
             // Big.js doesn't support exponentiating a Big to a Big, which
-            // is obious due to performance overheads. Use this case with care.
+            // is obvious due to performance overheads. Use this case with care.
 
             case "^":
               calcStack.push(Big(numA).pow(Big(numB).toNumber()));
