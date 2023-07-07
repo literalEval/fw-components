@@ -1,7 +1,6 @@
 import { html, LitElement, PropertyValueMap } from "lit";
-import { customElement, property, state } from "lit/decorators.js";
+import { customElement, property, state, query } from "lit/decorators.js";
 import { FormulaEditorStyles } from "./styles/formula-editor-styles.js";
-import { TextButtonStyles } from "../../styles/src/button-styles.js";
 import { Parser } from "./parser.js";
 import { Cursor } from "./cursor.js";
 import "./suggestion-menu.js";
@@ -20,6 +19,7 @@ export class FormulaEditor extends LitElement {
     _changedProperties: PropertyValueMap<any> | Map<PropertyKey, unknown>
   ): void {
     this._parser = new Parser(this.variables, this.minSuggestionLen);
+    this.parseInput(null, false);
   }
 
   /**
@@ -29,16 +29,10 @@ export class FormulaEditor extends LitElement {
    */
 
   @state()
-  _content: string = "";
-
-  @state()
   _formattedContent: Element | null = null;
 
   @state()
   _recommendations: string[] | null = null;
-
-  @state()
-  _errorStr: string | null = null;
 
   @state()
   _calculatedResult: number | undefined = undefined;
@@ -58,6 +52,9 @@ export class FormulaEditor extends LitElement {
   @state()
   lastInputType: string = "undef";
 
+  @property()
+  content: string = "";
+
   @property({
     type: Map<string, number>,
     converter: {
@@ -76,11 +73,17 @@ export class FormulaEditor extends LitElement {
   @property()
   minSuggestionLen: number = 2;
 
+  @property()
+  errorString: string | null = null;
+
+  @query("wysiwyg-editor")
+  editor: any;
+
   handleChange(event: InputEvent) {
     event.preventDefault();
 
     this.lastInputType = event.inputType;
-    this._content = (event.target as HTMLDivElement).innerText;
+    this.content = (event.target as HTMLDivElement).innerText;
     this.parseInput();
 
     (event.target as HTMLDivElement).focus();
@@ -94,30 +97,46 @@ export class FormulaEditor extends LitElement {
   }
 
   onClickRecommendation(recommendation: string) {
-    let editor = document.getElementById("wysiwyg-editor");
+    let editor = this.shadowRoot?.getElementById("wysiwyg-editor");
     if (!editor) return;
 
     this.parseInput(recommendation);
     this.currentCursorPosition = null;
   }
 
-  parseInput(recommendation: string | null = null) {
-    let editor = document.getElementById("wysiwyg-editor");
+  /**
+   *
+   * @param recommendation The recommendation which needs to be inserted
+   * at the current cursor position
+   * @param manageCursor Whether or not cursor management is needed. Not
+   * needed when manual insertion of text is required (eg: during initialization)
+   * @returns void
+   */
+  parseInput(
+    recommendation: string | null = null,
+    manageCursor: boolean = true
+  ) {
+    let editor = this.shadowRoot?.getElementById("wysiwyg-editor");
     if (!editor) return;
 
-    this.currentCursorPosition = recommendation
-      ? this.currentCursorPosition
-      : Cursor.getCaretPosition(editor);
+    /**
+     * @see https://github.com/WICG/webcomponents/issues/79
+     */
+
+    if (manageCursor)
+      this.currentCursorPosition = recommendation
+        ? this.currentCursorPosition
+        : Cursor.getCaretPosition(this.shadowRoot!, editor);
 
     const parseOutput = this._parser.parseInput(
-      this._content,
+      this.content,
       this.currentCursorPosition,
       recommendation
     );
 
     this._recommendations = parseOutput.recommendations;
     this._formattedContent = parseOutput.formattedContent;
-    this._errorStr = parseOutput.errorString;
+    this.errorString = parseOutput.errorString;
 
     /**
      * Don't modify the text stream manually if the text is being composed,
@@ -131,54 +150,61 @@ export class FormulaEditor extends LitElement {
       editor.innerHTML = parseOutput.formattedString!;
     }
 
-    this._content = (editor as HTMLDivElement).innerText;
+    this.content = (editor as HTMLDivElement).innerText;
 
     if (recommendation) {
       this._recommendations = null;
       this.currentCursorPosition = parseOutput.newCursorPosition;
     }
 
-    Cursor.setCaretPosition(this.currentCursorPosition!, editor);
+    if (manageCursor)
+      Cursor.setCaretPosition(this.currentCursorPosition!, editor);
     editor?.focus();
 
-    this.currentCursorRect = Cursor.getCursorRect();
+    if (manageCursor)
+      this.currentCursorRect = Cursor.getCursorRect(this.shadowRoot!);
+
     this.requestUpdate();
+
+    this.dispatchEvent(
+      new CustomEvent("fw-formula-content-changed", {
+        detail: {
+          formulaString: this.content,
+          error: this.errorString,
+        },
+        bubbles: true,
+      })
+    );
   }
 
   requestCalculate() {
-    if (this._parser.parseInput(this._content).errorString) {
+    if (this._parser.parseInput(this.content).errorString) {
       return;
     }
 
-    const calculatedResult = this._parser.calculate(this._content);
+    const calculatedResult = this._parser.calculate(this.content);
 
-    this._content = this._parser.addParentheses(this._content) ?? this._content;
+    this.content = this._parser.addParentheses(this.content) ?? this.content;
     this.parseInput();
 
     this._calculatedResult = calculatedResult.result;
-    this._errorStr = calculatedResult.errorString;
+    this.errorString = calculatedResult.errorString;
 
     this._recommendations = null;
     this.requestUpdate();
   }
 
   requestFormat() {
-    this._content = this._parser.addParentheses(this._content) ?? this._content;
+    this.content = this._parser.addParentheses(this.content) ?? this.content;
     this.parseInput();
     this._recommendations = null;
     this.requestUpdate();
-  }
-
-  // Disable shadow-root as it messes up cursor detection.
-  createRenderRoot() {
-    return this;
   }
 
   render() {
     return html`
       <style>
         ${FormulaEditorStyles}
-        ${TextButtonStyles}
       </style>
       <div
         contenteditable
@@ -192,8 +218,11 @@ export class FormulaEditor extends LitElement {
         ? html` <suggestion-menu
             style="
               position: absolute; 
-              left: ${this.currentCursorRect?.left + "px"}; 
-              top: ${(this.currentCursorRect?.top ?? 0) +
+              left: ${(this.currentCursorRect?.left ?? 0) -
+            (this.editor?.getClientRect()[0]?.left ?? 0) +
+            "px"}; 
+              top: ${(this.currentCursorRect?.top ??
+              0 - (this.editor?.getClientRect()[0]?.top ?? 0)) +
             window.scrollY +
             "px"};
             "
@@ -201,15 +230,6 @@ export class FormulaEditor extends LitElement {
             .onClickRecommendation=${(e: any) => this.onClickRecommendation(e)}
           ></suggestion-menu>`
         : html``}
-      <div id="wysiwyg-err" class="${this._errorStr ?? "wysiwyg-no-err"}">
-        ${this._errorStr ?? html`&nbsp;`}
-      </div>
-      <button class="primary-text-button" @click=${this.requestCalculate}>
-        Calculate
-      </button>
-      <button class="primary-text-button" @click=${this.requestFormat}>
-        Format
-      </button>
       <p>${this._calculatedResult}</p>
     `;
   }

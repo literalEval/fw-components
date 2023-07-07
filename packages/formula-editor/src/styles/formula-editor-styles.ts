@@ -9,7 +9,7 @@ export const FormulaEditorStyles = css`
     color: var(--fe-text-color, #f7f1ff);
     line-height: 1.1;
     width: 100%;
-    height: 100%;
+    height: var(--fe-height, 60%);
     border-radius: var(--fe-border-radius, 4px) var(--fe-border-radius, 4px) 0px
       0px;
     overflow: auto;
@@ -18,22 +18,7 @@ export const FormulaEditorStyles = css`
     white-space: pre-wrap;
     background-color: var(--fe-background-color, #222222);
     margin: 0px;
-  }
-
-  #wysiwyg-err {
-    width: 100%;
-    border-radius: 0px 0px var(--fe-border-radius, 4px)
-      var(--fe-border-radius, 4px);
-    color: var(--fe-err-text-color, #fc514f);
-    border: 2px solid black;
-    /* border-top: 0px; */
-    background-color: var(--fe-background-color, #222222);
-    padding: 4px;
-    margin: 0px 0px 8px 0px;
-  }
-
-  .wysiwyg-no-err {
-    color: #098668 !important;
+    /* position: relative; */
   }
 
   .wysiwygInternals.error {
@@ -42,7 +27,7 @@ export const FormulaEditorStyles = css`
     text-decoration-color: var(--fe-err-underline-color, #fc514f);
     -webkit-text-decoration-style: wavy;
     text-decoration-style: wavy;
-    text-decoration-thickness: 1px;
+    /* text-decoration-thickness: 1px; */
     text-decoration-color: var(--fe-err-underline-color, red);
   }
 

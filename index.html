@@ -14,7 +14,10 @@
 </head>
 
 <body>
+    <script type="module" src="./dist/packages/formula-editor/src/formula-builder.js"></script>
     <script type="module" src="./dist/packages/formula-editor/src/formula-editor.js"></script>
+    <script type="module" src="./dist/packages/formula-editor/src/formula-creator.js"></script>
+    <script type="module" src="./dist/packages/formula-editor/src/sub-components/operator-input.js"></script>
     <style>
         body {
             height: 100vh;
@@ -23,12 +26,13 @@
             justify-content: center;
             position: relative;
             font-family: 'Fira Code', sans-serif;
-            font-size: 80%;
 
             --fe-text-color: #080E00;
             --fe-background-color: #FFFFFF;
             --fe-caret-color: #000;
             --fe-no-err-color: #098668;
+            --fe-err-border-radius: 0px;
+            --fe-err-border-width: 0px;
             --fe-text-color: #0070C1;
             --fe-suggestion-color: #030303;
             --fe-suggestion-background-color: #F3F3F3;
@@ -36,9 +40,12 @@
             --fe-suggestion-focus-background-color: #0060C0;
         }
     </style>
-    <formula-editor class="fe" minSuggestionLen="1" style="height: 320px; width: 320px;"
-        variables='[["sales_expense",2],["sales_in_quarter",3],["sales_cummulative",3],["cummulative_sum",4],["mayank",10],["mohini",0.2],["ravi",7],["ravipandey",8]]'>
-    </formula-editor>
+    <formula-builder style="height: 600px; width: 400px"
+        formula='{"name":"sus","formulaString":"10 / mayank","precision":-1}'></formula-builder>
+
+    <script>
+        document.addEventListener('fw-formula-changed', (e) => console.log(e))
+    </script>
 </body>
 
 </html>

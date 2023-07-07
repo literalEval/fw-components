@@ -91,13 +91,15 @@ export class Cursor {
     return false;
   }
 
-  static getCaretPosition = (element: any) => {
-    const range = window.getSelection()!.getRangeAt(0);
+  static getCaretPosition(shadowRoot: ShadowRoot, element: HTMLElement) {
+    // `getSelection` is not defined for the type ShadowRoot in TS,
+    // but it does exist.
+    const range = (shadowRoot as any).getSelection()!.getRangeAt(0);
     const prefix = range.cloneRange();
     prefix.selectNodeContents(element);
     prefix.setEnd(range.endContainer, range.endOffset);
     return prefix.toString().length;
-  };
+  }
 
   static setCaretPosition = (pos: any, parent: any) => {
     for (const node of parent.childNodes) {
@@ -123,7 +125,10 @@ export class Cursor {
     return pos;
   };
 
-  static getCursorRect() {
-    return window.getSelection()?.getRangeAt(0)?.getClientRects()[0];
+  static getCursorRect(shadowRoot: ShadowRoot) {
+    return (shadowRoot as any)
+      .getSelection()
+      ?.getRangeAt(0)
+      ?.getClientRects()[0];
   }
 }
